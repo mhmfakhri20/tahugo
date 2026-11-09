@@ -15,6 +15,8 @@ new #[Title('Beranda')] class extends Component {
             icon="cube"
             title="Belum ada permintaan stok"
             description="Permintaan baru dari outlet dan stok yang menipis akan muncul di sini."
-        />
+        >
+            <flux:button :href="route('warehouse.stock')" wire:navigate>Periksa inventori</flux:button>
+        </x-empty-state>
     </div>
 </div>

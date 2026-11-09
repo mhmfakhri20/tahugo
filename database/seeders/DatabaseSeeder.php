@@ -14,7 +14,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(LocationSeeder::class);
+        $this->call([
+            LocationSeeder::class,
+            ExpenseCategorySeeder::class,
+            ItemSeeder::class,
+            ProductSeeder::class,
+        ]);
 
         if (! app()->isProduction()) {
             $this->call(DevUserSeeder::class);

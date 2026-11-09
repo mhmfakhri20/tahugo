@@ -1,8 +1,12 @@
-{{-- Empty state tahugo.: kotak canvas, ikon brown dalam kotak soft, judul, deskripsi, tombol opsional (slot). --}}
+{{--
+    Empty state tahugo.: kotak canvas, ikon brown dalam kotak soft, judul, deskripsi, satu tombol (slot, opsional).
+    size: md (desktop) | lg (outlet: deskripsi 16px).
+--}}
 @props([
     'icon' => 'cube',
     'title',
     'description' => null,
+    'size' => 'md',
 ])
 
 <div {{ $attributes->class('flex flex-col items-center gap-3 rounded-xl bg-canvas px-6 py-10 text-center') }}>
@@ -11,7 +15,7 @@
     </div>
     <div class="font-semibold text-text">{{ $title }}</div>
     @if ($description)
-        <p class="max-w-sm text-sm text-muted">{{ $description }}</p>
+        <p @class(['max-w-sm text-muted', 'text-base' => $size === 'lg', 'text-sm' => $size !== 'lg'])>{{ $description }}</p>
     @endif
     @if ($slot->isNotEmpty())
         <div class="mt-1">{{ $slot }}</div>

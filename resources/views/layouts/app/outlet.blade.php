@@ -23,6 +23,8 @@
         </header>
 
         <main class="mx-auto w-full max-w-2xl px-4 pt-4 pb-28">
+            <x-flash size="lg" class="mb-4" />
+
             {{ $slot }}
         </main>
 

@@ -3,7 +3,7 @@
         <x-auth-header title="Selamat datang kembali" description="Masuk ke Tahu Go Business untuk melanjutkan operasional Anda." />
 
         <!-- Session Status -->
-        <x-auth-session-status class="text-center" :status="session('status')" />
+        <x-auth-session-status :status="session('status')" />
 
         <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-5">
             @csrf

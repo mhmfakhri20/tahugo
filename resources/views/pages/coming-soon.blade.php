@@ -8,7 +8,7 @@
                 icon="wrench-screwdriver"
                 title="Fitur ini sedang disiapkan"
                 description="Menu ini akan aktif pada tahap pengembangan berikutnya."
-                class="[&_p]:text-base"
+                size="lg"
             />
         </div>
     </div>

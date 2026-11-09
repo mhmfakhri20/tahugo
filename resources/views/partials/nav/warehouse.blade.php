@@ -1,3 +1,4 @@
+<div class="px-2 pt-2 pb-1 text-xs font-semibold tracking-wide text-muted uppercase">Menu utama</div>
 <flux:sidebar.item icon="home" :href="route('warehouse.home')" :current="request()->routeIs('warehouse.home')" wire:navigate>
     Beranda
 </flux:sidebar.item>

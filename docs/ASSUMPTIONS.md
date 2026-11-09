@@ -35,3 +35,30 @@ Catatan keputusan untuk hal yang tidak diatur PRD (lihat aturan di `CLAUDE.md`).
 | DS-5 | Label login "Username" (bukan "Username atau email"); teks bantuan "Hubungi pemilik untuk mendapatkan akun." tanpa tautan. | Login hanya pakai username dan reset lewat pemilik (F0-1, F0-2). |
 | DS-6 | Token radius Tailwind ditimpa: `md` = 8px, `lg` = 14px, `xl`/`2xl` = 20px. | Tombol/input Flux memakai `rounded-lg` dan kartu `rounded-xl`, jadi radius 8/14/20 berlaku otomatis. |
 | DS-7 | Salam beranda (`x-greeting`) mengikuti jam Asia/Jakarta: pagi 04.00–10.59, siang 11.00–14.59, sore 15.00–17.59, malam di luar itu. | Mockup memakai "Selamat siang, …"; pembagian jam mengikuti kebiasaan umum. |
+| DS-8 | Top bar desktop pemilik/gudang hanya berisi breadcrumb "Workspace / {peran}", judul halaman, dan menu profil. Lonceng notifikasi, pemilih cabang, indikator "Semua data tersinkron", dan "Pusat bantuan" dari mockup tidak dibuat. | Fitur tersebut belum ada di PRD/fase saat ini; tidak boleh menambah fitur. |
+| DS-9 | Tombol **Keluar** ada di bawah sidebar (sesuai mockup); profil + menu akun pindah ke top bar kanan. Pemilik: Pengaturan dikelompokkan di "Lainnya". | Mockup dashboard pemilik/gudang. Menu tetap mengikuti §11 PRD. |
+| DS-10 | Penjaga outlet tetap memakai bottom navigation, walau mockup outlet di `docs/design/penjaga_outlet` berformat desktop dengan sidebar. | CLAUDE.md: outlet mobile-first (NFR-1), mengalahkan mockup. |
+| DS-11 | Komponen `x-metric-card` dibuat tetapi belum dipakai; dashboard pemilik F0 tanpa kartu metrik. | Keputusan pemilik proyek: data metrik baru ada di F6. |
+| DS-12 | Layout auth `card` & `split` bawaan starter kit dihapus (tidak dipakai, memakai warna Tailwind bawaan). | Semua halaman wajib memakai token. |
+| DS-13 | Toast flash (`x-flash`) hanya membaca `session('success')`. `session('status')` dari Fortify berisi kode (mis. `password-updated`) dan hanya ditampilkan di halaman auth lewat `x-auth-session-status`. | Mencegah kode teknis tampil ke pengguna. |
+
+## F1 — Master data, manajemen user, policies
+
+| # | Asumsi | Alasan |
+|---|---|---|
+| F1-1 | Satuan bahan (`items.unit`) berupa teks bebas (maks 20 karakter); form menyarankan pcs, kg, gram, pack, liter, sachet. | MD-2 menyebut "dll.", jadi daftar satuan tidak tertutup. |
+| F1-2 | Harga di **keempat kanal wajib** diisi (boleh Rp0). Produk placeholder di-seed dengan harga Rp0 di semua kanal dan resep kosong. | Keputusan pemilik proyek; harga & resep asli `[TBD]` §15-1. |
+| F1-3 | Master data dan user **tidak pernah dihapus**; hanya diaktifkan/nonaktifkan (`is_active`). | AUTH-5 dan menjaga riwayat transaksi/ledger. |
+| F1-4 | Pemilik tidak bisa menonaktifkan akunnya sendiri atau mengubah perannya sendiri. Karena itu selalu ada minimal satu pemilik aktif. | Mencegah terkunci dari sistem. |
+| F1-5 | Penjaga outlet wajib ditautkan ke **outlet aktif** (bukan gudang). Peran lain otomatis tanpa lokasi. Mengaktifkan kembali penjaga yang outletnya nonaktif ditolak. | AUTH-3, BR-7. |
+| F1-6 | Outlet yang masih punya penjaga aktif tidak bisa dinonaktifkan atau diubah menjadi gudang. | Penjaga tanpa outlet aktif tidak bisa bekerja (F0-8). |
+| F1-7 | Reset password oleh pemilik langsung mengeluarkan user dari semua perangkat (sesi di tabel `sessions` dihapus, `remember_token` diganti). | AUTH-5; mencegah sesi lama tetap aktif. |
+| F1-8 | Validasi input memakai `validate()` di komponen Livewire + aturan bisnis di Service (`app/Services`), bukan FormRequest. | Form di Livewire tidak lewat HTTP controller; FormRequest tetap dipakai bila nanti ada controller. |
+| F1-9 | Akses **baca** untuk peran lain sudah disiapkan di Policy: bahan & produk (semua peran), lokasi (admin gudang semua, penjaga hanya outletnya), kategori pengeluaran (penjaga). Halamannya dibuat di F2–F5. | Dipakai stok, kasir, dan pengeluaran. |
+| F1-10 | Perubahan user/harga/BOM **belum** dicatat ke audit log. | Audit log (AUD-1) dijadwalkan di F7. |
+| F1-11 | Nama bahan, nama produk, nama kategori pengeluaran, kode lokasi, dan username harus unik. Kode lokasi disimpan huruf besar (maks 10 huruf/angka). | Menghindari data ganda; kode dipakai di nomor transaksi (POS-7). |
+| F1-12 | Radius absen 10–5.000 m (default 100). Jam buka/tutup dan target omzet hanya untuk outlet; jam tutup harus setelah jam buka (outlet lewat tengah malam belum didukung). | MD-1; jam operasional asli `[TBD]`. |
+| F1-13 | Seeder master data memakai `firstOrCreate`, sehingga menjalankan seeder ulang tidak menimpa harga/data yang sudah diubah pemilik. Master data juga di-seed di production (bukan akun). | §12; aman dijalankan berulang. |
+| F1-14 | Stok minimum disimpan per lokasi (`item_min_stocks`); dikosongkan = tidak diawasi di lokasi itu. | MD-2. |
+| F1-15 | Notifikasi hasil aksi di halaman Livewire memakai event browser `notify` → toast melayang (`x-flash`), sedangkan setelah redirect memakai `session('success')`. | Sesuai desain toast tahugo. dan tidak perlu memuat ulang halaman. |
+| F1-16 | Kategori pengeluaran bisa dinonaktifkan tanpa dialog konfirmasi (dampaknya kecil dan bisa dibalik); aksi nonaktifkan lainnya selalu memakai dialog. | NFR-1: konfirmasi untuk aksi berdampak. |

@@ -64,6 +64,16 @@ class Location extends Model
         return $this->hasMany(User::class);
     }
 
+    /**
+     * Minimum stock settings for items at this location.
+     *
+     * @return HasMany<ItemMinStock, $this>
+     */
+    public function minStocks(): HasMany
+    {
+        return $this->hasMany(ItemMinStock::class);
+    }
+
     public function isOutlet(): bool
     {
         return $this->type === LocationType::Outlet;
@@ -90,5 +100,14 @@ class Location extends Model
     protected function warehouses(Builder $query): void
     {
         $query->where('type', LocationType::Warehouse);
+    }
+
+    /**
+     * @param  Builder<Location>  $query
+     */
+    #[Scope]
+    protected function active(Builder $query): void
+    {
+        $query->where('is_active', true);
     }
 }

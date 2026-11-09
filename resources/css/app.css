@@ -139,3 +139,8 @@ select:focus[data-flux-control] {
 [data-flux-sidebar-item][data-current] svg {
     @apply text-[#38332B];
 }
+
+/* Tombol bahaya design system: latar danger/10 + teks danger. Pakai <flux:button variant="ghost" class="btn-danger">. */
+[data-flux-button].btn-danger {
+    @apply bg-danger/10 text-danger shadow-none hover:bg-danger/15;
+}

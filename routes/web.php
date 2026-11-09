@@ -19,7 +19,17 @@ Route::middleware(['auth'])->group(function () {
         Route::view('verification', 'pages.coming-soon', ['title' => 'Verifikasi'])->name('verification');
         Route::view('reports', 'pages.coming-soon', ['title' => 'Laporan'])->name('reports');
         Route::view('attendance', 'pages.coming-soon', ['title' => 'Absensi'])->name('attendance');
-        Route::view('settings', 'pages.coming-soon', ['title' => 'Pengaturan'])->name('settings');
+        // Pengaturan: master data & user management (F1).
+        Route::get('settings', fn () => redirect()->route('owner.settings.users'))->name('settings');
+        Route::prefix('settings')->name('settings.')->group(function () {
+            Route::livewire('users', 'pages::owner.settings.users')->name('users');
+            Route::livewire('locations', 'pages::owner.settings.locations')->name('locations');
+            Route::livewire('items', 'pages::owner.settings.items')->name('items');
+            Route::livewire('products', 'pages::owner.settings.products')->name('products');
+            Route::livewire('products/create', 'pages::owner.settings.product-edit')->name('products.create');
+            Route::livewire('products/{product}', 'pages::owner.settings.product-edit')->name('products.edit');
+            Route::livewire('expense-categories', 'pages::owner.settings.expense-categories')->name('expense-categories');
+        });
         Route::get('{path}', fn () => abort(404))->where('path', '.*')->name('fallback');
     });
 

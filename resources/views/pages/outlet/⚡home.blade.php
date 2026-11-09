@@ -24,6 +24,7 @@ new #[Title('Beranda')] class extends Component {
         icon="clock"
         title="Absen & shift segera hadir"
         description="Tombol Absen, Buka Shift, dan Tutup Shift akan tampil di halaman ini."
-        class="border border-border [&_p]:text-base"
+        size="lg"
+        class="border border-border"
     />
 </div>
