@@ -8,31 +8,73 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * Design system "tahugo." — warm, precise, operational (lihat CLAUDE.md & docs/design/design-system.png).
+ * Pakai token di bawah (bg-canvas, text-muted, border-border, bg-success/10, ...), bukan warna Tailwind bawaan.
+ */
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 
-    --color-zinc-50: #fafafa;
-    --color-zinc-100: #f5f5f5;
-    --color-zinc-200: #e5e5e5;
-    --color-zinc-300: #d4d4d4;
-    --color-zinc-400: #a3a3a3;
-    --color-zinc-500: #737373;
-    --color-zinc-600: #525252;
-    --color-zinc-700: #404040;
-    --color-zinc-800: #262626;
-    --color-zinc-900: #171717;
-    --color-zinc-950: #0a0a0a;
+    /* Token warna (mode terang) */
+    --color-primary: #F4C542;
+    --color-soft: #FFE9A6;
+    --color-canvas: #FFF9E9;
+    --color-brown: #8B633E;
+    --color-surface: #FFFFFF;
+    --color-text: #38332B;
+    --color-border: #EAE3D5;
+    --color-muted: #8B8173;
+    --color-success: #4F8A62;
+    --color-warning: #E6A23C;
+    --color-danger: #D9534F;
+    --color-info: #4A6FA5;
 
-    --color-accent: var(--color-neutral-800);
-    --color-accent-content: var(--color-neutral-800);
-    --color-accent-foreground: var(--color-white);
+    /*
+     * Ramp zinc diganti nada hangat supaya komponen internal Flux (label, menu, border, teks sekunder)
+     * ikut tema tanpa di-override satu per satu. Kode aplikasi tetap memakai token di atas (ASSUMPTIONS DS-1).
+     */
+    --color-zinc-50: #FBF7EE;
+    --color-zinc-100: #F5EFE3;
+    --color-zinc-200: #EAE3D5;
+    --color-zinc-300: #D9D0BF;
+    --color-zinc-400: #B3A897;
+    --color-zinc-500: #8B8173;
+    --color-zinc-600: #6B6256;
+    --color-zinc-700: #4A433A;
+    --color-zinc-800: #38332B;
+    --color-zinc-900: #26221D;
+    --color-zinc-950: #1C1915;
+
+    /* Radius: 8 (badge/input kecil), 14 (tombol, input, item nav), 20 (kartu, dialog) */
+    --radius-md: 8px;
+    --radius-lg: 14px;
+    --radius-xl: 20px;
+    --radius-2xl: 20px;
+
+    /* Aksen Flux: kuning, teks gelap di atasnya */
+    --color-accent: var(--color-primary);
+    --color-accent-content: var(--color-text);
+    --color-accent-foreground: #38332B;
 }
 
+/* Mode gelap: diturunkan dari palet tahugo (tidak ada di design system; ASSUMPTIONS DS-2). */
 @layer theme {
     .dark {
-        --color-accent: var(--color-white);
-        --color-accent-content: var(--color-white);
-        --color-accent-foreground: var(--color-neutral-800);
+        --color-soft: #3D331C;
+        --color-canvas: #1C1915;
+        --color-brown: #C49A6C;
+        --color-surface: #26221D;
+        --color-text: #F3EDE2;
+        --color-border: #3A342C;
+        --color-muted: #A89E8F;
+        --color-success: #6FAE82;
+        --color-warning: #F0B65A;
+        --color-danger: #E5736F;
+        --color-info: #7F9FD0;
+
+        --color-accent: var(--color-primary);
+        --color-accent-content: var(--color-primary);
+        --color-accent-foreground: #38332B;
     }
 }
 
@@ -43,7 +85,11 @@
     ::before,
     ::backdrop,
     ::file-selector-button {
-        border-color: var(--color-gray-200, currentColor);
+        border-color: var(--color-border, currentColor);
+    }
+
+    body {
+        @apply bg-canvas text-text antialiased;
     }
 }
 
@@ -52,15 +98,44 @@
 }
 
 [data-flux-label] {
-    @apply  !mb-0 !leading-tight;
+    @apply !mb-0 !leading-tight;
 }
 
+/* Fokus input = border primary */
 input:focus[data-flux-control],
 textarea:focus[data-flux-control],
 select:focus[data-flux-control] {
-    @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
+    @apply outline-hidden border-primary ring-1 ring-primary;
 }
 
-/* \[:where(&)\]:size-4 {
-    @apply size-4;
-} */
+/* Error validasi = border + pesan danger */
+[data-flux-control][data-invalid] {
+    @apply border-danger ring-danger;
+}
+
+[data-flux-error] {
+    @apply text-danger;
+}
+
+/* Tombol: font semibold */
+[data-flux-button] {
+    @apply font-semibold;
+}
+
+/* Item sidebar: tinggi nyaman, aktif = latar primary + teks gelap */
+[data-flux-sidebar-item] {
+    @apply h-11 text-sm font-medium text-text;
+}
+
+[data-flux-sidebar-item] [data-slot='icon'],
+[data-flux-sidebar-item] > div > svg {
+    @apply text-muted;
+}
+
+[data-flux-sidebar-item][data-current] {
+    @apply border-transparent bg-primary font-semibold text-[#38332B];
+}
+
+[data-flux-sidebar-item][data-current] svg {
+    @apply text-[#38332B];
+}

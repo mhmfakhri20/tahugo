@@ -23,3 +23,15 @@ Catatan keputusan untuk hal yang tidak diatur PRD (lihat aturan di `CLAUDE.md`).
 | F0-15 | Teks UI Indonesia ditulis langsung di view baru; string bawaan starter kit yang masih memakai `__()` diterjemahkan di `lang/id.json`. Pesan validasi & login di `lang/id/*.php`. | Locale `id`. |
 | F0-17 | Setiap area peran (`/owner/*`, `/outlet/*`, `/warehouse/*`) diakhiri route catch-all yang berada di balik Gate. URL apa pun di area peran lain → 403 (termasuk URL yang tidak ada); URL tak dikenal di area sendiri → 404. | Konsisten dengan acceptance criteria AUTH (403) dan mencegah menebak URL yang ada dari beda 403/404. |
 | F0-16 | Logout otomatis saat idle memakai `SESSION_LIFETIME` bawaan (120 menit). Throttle login 5×/menit per username+IP (bawaan). | AUTH-6 (prioritas S). Nilai bisa disesuaikan lewat `.env`. |
+
+## Design system "tahugo."
+
+| # | Asumsi | Alasan |
+|---|---|---|
+| DS-1 | Ramp warna `zinc-*` Tailwind ditimpa dengan nada hangat (50 `#FBF7EE` … 200 = border, 500 = muted, 800 = text, 950 `#1C1915`). Kode aplikasi tetap hanya memakai token (`bg-canvas`, `text-muted`, dst.). | Komponen internal Flux memakai `zinc-*`; dengan ramp hangat, label/menu/border Flux otomatis sesuai tema tanpa override satu per satu. |
+| DS-2 | Palet **mode gelap** diturunkan sendiri: canvas `#1C1915`, surface `#26221D`, border `#3A342C`, text `#F3EDE2`, muted `#A89E8F`, soft `#3D331C`, brown `#C49A6C`, primary tetap `#F4C542`, warna status sedikit lebih terang. | Design system hanya berisi palet terang; user memilih tetap menyediakan versi gelap. |
+| DS-3 | Mode terang menjadi bawaan (`class="dark"` paksa dihapus). Mode gelap/ikuti HP dipilih lewat Pengaturan > Tampilan. | Sesuai design system; pilihan tetap disediakan. |
+| DS-4 | "Pusat bantuan" (mockup login) dan widget metrik/grafik/tabel (mockup dashboard pemilik) tidak dibuat di F0; diganti empty state "segera hadir". | Belum ada halaman tujuan; widget dashboard termasuk F6 dan tidak boleh memakai data karangan. |
+| DS-5 | Label login "Username" (bukan "Username atau email"); teks bantuan "Hubungi pemilik untuk mendapatkan akun." tanpa tautan. | Login hanya pakai username dan reset lewat pemilik (F0-1, F0-2). |
+| DS-6 | Token radius Tailwind ditimpa: `md` = 8px, `lg` = 14px, `xl`/`2xl` = 20px. | Tombol/input Flux memakai `rounded-lg` dan kartu `rounded-xl`, jadi radius 8/14/20 berlaku otomatis. |
+| DS-7 | Salam beranda (`x-greeting`) mengikuti jam Asia/Jakarta: pagi 04.00–10.59, siang 11.00–14.59, sore 15.00–17.59, malam di luar itu. | Mockup memakai "Selamat siang, …"; pembagian jam mengikuti kebiasaan umum. |

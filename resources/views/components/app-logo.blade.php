@@ -1,17 +1,16 @@
+{{-- Logo + wordmark "tahugo.". Pakai `size="lg"` untuk header halaman login. --}}
 @props([
-    'sidebar' => false,
+    'size' => 'md',
+    'href' => null,
 ])
 
-@if($sidebar)
-    <flux:sidebar.brand :name="config('app.name', 'Laravel')" {{ $attributes }}>
-        <x-slot name="logo" class="flex aspect-square size-8 items-center justify-center rounded-md bg-accent-content text-accent-foreground">
-            <x-app-logo-icon class="size-5 fill-current text-white dark:text-black" />
-        </x-slot>
-    </flux:sidebar.brand>
-@else
-    <flux:brand :name="config('app.name', 'Laravel')" {{ $attributes }}>
-        <x-slot name="logo" class="flex aspect-square size-8 items-center justify-center rounded-md bg-accent-content text-accent-foreground">
-            <x-app-logo-icon class="size-5 fill-current text-white dark:text-black" />
-        </x-slot>
-    </flux:brand>
-@endif
+@php
+    $iconClass = $size === 'lg' ? 'size-10' : 'size-8';
+    $textClass = $size === 'lg' ? 'text-2xl' : 'text-xl';
+    $tag = $href ? 'a' : 'div';
+@endphp
+
+<{{ $tag }} @if ($href) href="{{ $href }}" @endif {{ $attributes->class('inline-flex items-center gap-2.5 text-text') }}>
+    <x-app-logo-icon class="{{ $iconClass }} shrink-0" />
+    <span class="{{ $textClass }} font-bold tracking-tight">tahugo.</span>
+</{{ $tag }}>
