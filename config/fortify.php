@@ -1,7 +1,5 @@
 <?php
 
-use Laravel\Fortify\Features;
-
 return [
 
     /*
@@ -45,7 +43,7 @@ return [
     |
     */
 
-    'username' => 'email',
+    'username' => 'username',
 
     'email' => 'email',
 
@@ -142,8 +140,6 @@ return [
     |
     */
 
-    'features' => [
-        Features::resetPasswords(),
-    ],
+    'features' => [],
 
 ];

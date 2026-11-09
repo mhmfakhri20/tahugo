@@ -3,16 +3,15 @@
 use App\Concerns\ProfileValidationRules;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
-use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Profile settings')] class extends Component {
+new #[Title('Profil')] class extends Component {
     use ProfileValidationRules;
 
     public string $name = '';
-    public string $email = '';
+
+    public string $phone = '';
 
     /**
      * Mount the component.
@@ -20,55 +19,57 @@ new #[Title('Profile settings')] class extends Component {
     public function mount(): void
     {
         $this->name = Auth::user()->name;
-        $this->email = Auth::user()->email;
+        $this->phone = Auth::user()->phone ?? '';
     }
 
     /**
      * Update the profile information for the currently authenticated user.
+     * Username, role and outlet can only be changed by the owner (AUTH-5).
      */
     public function updateProfileInformation(): void
     {
-        $user = Auth::user();
+        $validated = $this->validate($this->profileRules());
 
-        $validated = $this->validate($this->profileRules($user->id));
+        Auth::user()->update([
+            'name' => $validated['name'],
+            'phone' => filled($validated['phone']) ? $validated['phone'] : null,
+        ]);
 
-        $user->fill($validated);
-
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
-        }
-
-        $user->save();
-
-        Flux::toast(variant: 'success', text: __('Profile updated.'));
+        Flux::toast(variant: 'success', text: 'Profil tersimpan.');
     }
-
 }; ?>
 
 <section class="w-full">
     @include('partials.settings-heading')
 
-    <flux:heading level="2" class="sr-only">{{ __('Profile settings') }}</flux:heading>
+    <flux:heading level="2" class="sr-only">Profil</flux:heading>
 
-    <x-pages::settings.layout :heading="__('Profile')" :subheading="__('Update your name and email address')">
+    <x-pages::settings.layout heading="Profil" subheading="Ubah nama dan nomor HP Anda">
+        <div class="my-6 space-y-1">
+            <flux:text>Username: <strong>{{ auth()->user()->username }}</strong></flux:text>
+            <flux:text>Peran: <strong>{{ auth()->user()->role->label() }}</strong></flux:text>
+            @if (auth()->user()->location)
+                <flux:text>Lokasi: <strong>{{ auth()->user()->location->name }}</strong></flux:text>
+            @endif
+        </div>
+
         <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
-            <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" />
+            <flux:input wire:model="name" label="Nama" type="text" required autocomplete="name" />
 
-            <div>
-                <flux:input wire:model="email" :label="__('Email')" type="email" required autocomplete="email" />
+            <flux:input wire:model="phone" label="No. HP (opsional)" type="tel" inputmode="tel" autocomplete="tel" />
 
-            </div>
-
-            <div class="flex items-center gap-4">
-                <div class="flex items-center justify-end">
-                    <flux:button variant="primary" type="submit" class="w-full" data-test="update-profile-button">
-                        {{ __('Save') }}
-                    </flux:button>
-                </div>
-
-            </div>
+            <flux:button variant="primary" type="submit" class="h-12 w-full text-base" data-test="update-profile-button">
+                Simpan
+            </flux:button>
         </form>
 
-            <livewire:pages::settings.delete-user-form />
+        @if (auth()->user()->isOutletStaff())
+            <form method="POST" action="{{ route('logout') }}" class="mt-8">
+                @csrf
+                <flux:button type="submit" icon="arrow-right-start-on-rectangle" class="h-12 w-full text-base" data-test="logout-button">
+                    Keluar
+                </flux:button>
+            </form>
+        @endif
     </x-pages::settings.layout>
 </section>

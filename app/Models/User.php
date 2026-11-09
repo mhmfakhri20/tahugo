@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Enums\Role;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -14,18 +16,20 @@ use Illuminate\Support\Str;
 /**
  * @property int $id
  * @property string $name
- * @property string $email
- * @property Carbon|null $email_verified_at
+ * @property string $username
+ * @property string|null $phone
  * @property string $password
- * @property string|null $two_factor_secret
- * @property string|null $two_factor_recovery_codes
- * @property Carbon|null $two_factor_confirmed_at
+ * @property Role $role
+ * @property int|null $location_id
+ * @property bool $is_active
+ * @property Carbon|null $last_login_at
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read Location|null $location
  */
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Fillable(['name', 'username', 'phone', 'password', 'role', 'location_id', 'is_active'])]
+#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -39,9 +43,36 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'role' => Role::class,
+            'is_active' => 'boolean',
+            'last_login_at' => 'datetime',
         ];
+    }
+
+    /**
+     * The outlet this user is assigned to (required for outlet staff).
+     *
+     * @return BelongsTo<Location, $this>
+     */
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
+    }
+
+    public function isOwner(): bool
+    {
+        return $this->role === Role::Owner;
+    }
+
+    public function isOutletStaff(): bool
+    {
+        return $this->role === Role::OutletStaff;
+    }
+
+    public function isWarehouseAdmin(): bool
+    {
+        return $this->role === Role::WarehouseAdmin;
     }
 
     /**

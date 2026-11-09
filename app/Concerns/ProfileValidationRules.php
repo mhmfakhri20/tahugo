@@ -2,30 +2,27 @@
 
 namespace App\Concerns;
 
-use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Unique;
 
 trait ProfileValidationRules
 {
     /**
-     * Get the validation rules used to validate user profiles.
+     * Get the validation rules used to validate the user's own profile.
      *
-     * @return array<string, array<int, Unique|ValidationRule|array<mixed>|string>>
+     * @return array<string, array<int, ValidationRule|array<mixed>|string>>
      */
-    protected function profileRules(?int $userId = null): array
+    protected function profileRules(): array
     {
         return [
             'name' => $this->nameRules(),
-            'email' => $this->emailRules($userId),
+            'phone' => $this->phoneRules(),
         ];
     }
 
     /**
      * Get the validation rules used to validate user names.
      *
-     * @return array<int, Unique|ValidationRule|array<mixed>|string>
+     * @return array<int, ValidationRule|array<mixed>|string>
      */
     protected function nameRules(): array
     {
@@ -33,20 +30,12 @@ trait ProfileValidationRules
     }
 
     /**
-     * Get the validation rules used to validate user emails.
+     * Get the validation rules used to validate (optional) phone numbers.
      *
-     * @return array<int, Unique|ValidationRule|array<mixed>|string>
+     * @return array<int, ValidationRule|array<mixed>|string>
      */
-    protected function emailRules(?int $userId = null): array
+    protected function phoneRules(): array
     {
-        return [
-            'required',
-            'string',
-            'email',
-            'max:255',
-            $userId === null
-                ? Rule::unique(User::class)
-                : Rule::unique(User::class)->ignore($userId),
-        ];
+        return ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s]+$/'];
     }
 }

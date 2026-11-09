@@ -4,28 +4,15 @@ use App\Concerns\PasswordValidationRules;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
-use Laravel\Fortify\Actions\DisableTwoFactorAuthentication;
-use Laravel\Fortify\Features;
-use Laravel\Fortify\Fortify;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Security settings')] class extends Component {
+new #[Title('Ganti password')] class extends Component {
     use PasswordValidationRules;
 
     public string $current_password = '';
     public string $password = '';
     public string $password_confirmation = '';
-
-
-
-    /**
-     * Mount the component.
-     */
-    public function mount(DisableTwoFactorAuthentication $disableTwoFactorAuthentication): void
-    {
-
-    }
 
     /**
      * Update the password for the currently authenticated user.
@@ -51,8 +38,6 @@ new #[Title('Security settings')] class extends Component {
 
         Flux::toast(variant: 'success', text: __('Password updated.'));
     }
-
-
 }; ?>
 
 <section class="w-full">

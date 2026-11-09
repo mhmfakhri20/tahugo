@@ -1,7 +1,8 @@
 <?php
 
-test('returns a successful response', function () {
-    $response = $this->get(route('home'));
-
-    $response->assertOk();
+test('the root url redirects guests to the login page', function () {
+    $this->followingRedirects()
+        ->get(route('home'))
+        ->assertOk()
+        ->assertSee('Masuk ke Tahu Go');
 });
