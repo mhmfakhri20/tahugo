@@ -25,6 +25,18 @@ enum Role: string
     }
 
     /**
+     * Route name prefix / URL area of this role ("owner", "outlet", "warehouse").
+     */
+    public function area(): string
+    {
+        return match ($this) {
+            self::Owner => 'owner',
+            self::OutletStaff => 'outlet',
+            self::WarehouseAdmin => 'warehouse',
+        };
+    }
+
+    /**
      * Named route of the home page for this role.
      */
     public function homeRoute(): string

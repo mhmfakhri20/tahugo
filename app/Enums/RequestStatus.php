@@ -29,4 +29,25 @@ enum RequestStatus: string
             self::Cancelled => 'Dibatalkan',
         };
     }
+
+    /**
+     * Variant for <x-status-badge> (design system: Menunggu=muted, Dikirim=info, ...).
+     */
+    public function badge(): string
+    {
+        return match ($this) {
+            self::Pending, self::Cancelled => 'muted',
+            self::Approved, self::Received => 'success',
+            self::Shipped => 'info',
+            self::Rejected => 'danger',
+        };
+    }
+
+    /**
+     * Statuses that no longer change.
+     */
+    public function isFinal(): bool
+    {
+        return in_array($this, [self::Received, self::Rejected, self::Cancelled], true);
+    }
 }

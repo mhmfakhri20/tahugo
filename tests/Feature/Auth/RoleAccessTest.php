@@ -5,10 +5,10 @@ use App\Models\User;
 $areas = [
     'owner' => ['owner.dashboard', 'owner.verification', 'owner.reports', 'owner.attendance',
         'owner.settings.users', 'owner.settings.locations', 'owner.settings.items', 'owner.settings.products',
-        'owner.settings.products.create', 'owner.settings.expense-categories',
+        'owner.settings.products.create', 'owner.settings.expense-categories', 'owner.stock', 'owner.requests.create',
     ],
-    'outlet' => ['outlet.home', 'outlet.cashier', 'outlet.expenses', 'outlet.stock'],
-    'warehouse' => ['warehouse.home', 'warehouse.stock', 'warehouse.purchases', 'warehouse.shipments', 'warehouse.reports'],
+    'outlet' => ['outlet.home', 'outlet.cashier', 'outlet.expenses', 'outlet.stock', 'outlet.requests.create'],
+    'warehouse' => ['warehouse.home', 'warehouse.stock', 'warehouse.purchases', 'warehouse.shipments', 'warehouse.reports', 'warehouse.purchases.create'],
 ];
 
 $users = [

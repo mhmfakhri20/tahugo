@@ -1,9 +1,15 @@
+@php
+    $pendingRequests = \App\Models\StockRequest::query()->inStatus(\App\Enums\RequestStatus::Pending)->count();
+@endphp
 <div class="px-2 pt-2 pb-1 text-xs font-semibold tracking-wide text-muted uppercase">Menu utama</div>
 <flux:sidebar.item icon="home" :href="route('owner.dashboard')" :current="request()->routeIs('owner.dashboard')" wire:navigate>
     Dashboard
 </flux:sidebar.item>
-<flux:sidebar.item icon="check-badge" :href="route('owner.verification')" :current="request()->routeIs('owner.verification*')" wire:navigate>
+<flux:sidebar.item icon="check-badge" :href="route('owner.verification')" :current="request()->routeIs('owner.verification*', 'owner.requests*')" :badge="$pendingRequests ?: null" wire:navigate>
     Verifikasi
+</flux:sidebar.item>
+<flux:sidebar.item icon="archive-box" :href="route('owner.stock')" :current="request()->routeIs('owner.stock*')" wire:navigate>
+    Stok
 </flux:sidebar.item>
 <flux:sidebar.item icon="document-chart-bar" :href="route('owner.reports')" :current="request()->routeIs('owner.reports*')" wire:navigate>
     Laporan

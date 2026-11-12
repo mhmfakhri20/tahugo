@@ -62,3 +62,24 @@ Catatan keputusan untuk hal yang tidak diatur PRD (lihat aturan di `CLAUDE.md`).
 | F1-14 | Stok minimum disimpan per lokasi (`item_min_stocks`); dikosongkan = tidak diawasi di lokasi itu. | MD-2. |
 | F1-15 | Notifikasi hasil aksi di halaman Livewire memakai event browser `notify` → toast melayang (`x-flash`), sedangkan setelah redirect memakai `session('success')`. | Sesuai desain toast tahugo. dan tidak perlu memuat ulang halaman. |
 | F1-16 | Kategori pengeluaran bisa dinonaktifkan tanpa dialog konfirmasi (dampaknya kecil dan bisa dibalik); aksi nonaktifkan lainnya selalu memakai dialog. | NFR-1: konfirmasi untuk aksi berdampak. |
+
+## F2 — Persediaan
+
+| # | Asumsi | Alasan |
+|---|---|---|
+| F2-1 | `App\Services\StockService` adalah satu-satunya kode yang menulis `stock_balances`/`stock_movements`. Semua mutasi di dalam DB transaction, baris saldo dikunci (`lockForUpdate`) berurutan (lokasi, bahan) untuk mencegah deadlock. Aritmetika qty memakai bcmath skala 3 (`App\Support\Qty`), tanpa float. | §6.6, NFR-6, BR-3. |
+| F2-2 | Stok minus hanya boleh lewat `adjustment` oleh pemilik; tipe lain yang membuat saldo < 0 ditolak dengan pesan berisi nama bahan, lokasi, stok tersedia, dan jumlah dibutuhkan. | BR-2 (sampai `[TBD]` POS-6 diputuskan). |
+| F2-3 | Kolom tambahan di `stock_requests` di luar §9: `rejected_by/rejected_at`, `ship_note`, `receive_note`, `cancelled_by/cancelled_at`. | INV-8: setiap perubahan status mencatat siapa & kapan; INV-6/INV-7 butuh catatan. |
+| F2-4 | Satu permintaan bisa berisi **banyak bahan** (`stock_request_items`). Field "tanggal dibutuhkan" dan "prioritas" pada desain *Permintaan stok* **tidak dibuat**. | §9 tidak memuat kolom tersebut; tidak menambah fitur di luar PRD. |
+| F2-5 | Gudang asal permintaan = gudang aktif pertama (id terkecil). Bila kelak ada lebih dari satu gudang, pemilihan gudang perlu ditambahkan. | Saat ini hanya ada 1 gudang (§1). |
+| F2-6 | Nomor permintaan `REQ-DDMMYY-XXX`, urut per hari (zona Asia/Jakarta), dibuat di dalam transaksi + indeks UNIQUE. Nomor pembelian ditampilkan `PB-000001` dari id (tidak disimpan). | Permintaan tim; PRD tidak mengatur nomor pembelian. |
+| F2-7 | Pemilik menyetujui dengan qty boleh diubah (0 = bahan dicoret, minimal satu bahan > 0). Permintaan buatan pemilik langsung `approved` dan pemilik memilih outlet tujuan. Penjaga selalu mengajukan untuk outletnya sendiri (outlet dari payload diabaikan). | INV-5, BR-7. Persetujuan oleh **pemilik**, bukan admin gudang (teks contoh di desain diabaikan). |
+| F2-8 | Kirim: qty kirim ≤ qty disetujui dan ≤ stok gudang; bila kurang dari disetujui, catatan wajib. Terima: qty terima ≥ 0, boleh berbeda (lebih/kurang) dari qty kirim; bila berbeda, catatan wajib. Selisih (`qty_received − qty_shipped`) ditampilkan sebagai badge "Selisih" di detail, verifikasi, pengiriman, dan daftar permintaan outlet. | INV-6, INV-7, BR-8. |
+| F2-9 | Pembatalan: pemilik boleh membatalkan permintaan `pending`/`approved`; pengaju boleh membatalkan miliknya selama `pending`. Setelah `shipped` tidak bisa dibatalkan. | INV-8 menyebut status `cancelled` tanpa aturan. |
+| F2-10 | Waste: penjaga hanya di outletnya, admin gudang hanya di gudang; tidak boleh membuat stok minus; alasan wajib. Adjustment: pemilik, arah tambah/kurangi + alasan wajib, dari menu **Stok**. | INV-9, §6.6. |
+| F2-11 | Pemilik mendapat menu sidebar baru **Stok** (monitor stok lintas lokasi + penyesuaian + kartu stok). Permintaan bahan ditangani di menu **Verifikasi** (tab Pengeluaran menyusul di F5); menu Verifikasi memberi badge jumlah permintaan menunggu. | INV-1/INV-2 (pemilik melihat semua lokasi) dan desain *Manajemen cabang*; §11 tidak menyediakan menu stok untuk pemilik. |
+| F2-12 | Status stok: **Habis** bila qty ≤ 0; **Stok menipis** bila qty < minimum lokasi; selain itu **Aman**. Bahan tanpa minimum dan tanpa saldo di suatu lokasi tidak dimunculkan di widget "Stok menipis". | INV-1. |
+| F2-13 | Foto nota pembelian opsional, `image` (jpg/png/webp) ≤ 5 MB, disimpan di disk privat `local` (`storage/app/private/purchases`), dilayani route `purchases/{purchase}/receipt` untuk pemilik & admin gudang. Belum ada resize di sisi klien; helper kamera/kompresi dibangun bersama absensi (F3). | NFR-4; NFR-3 menyusul. |
+| F2-14 | **TODO CASH-7:** pembelian belum tercatat sebagai pengeluaran usaha karena tabel `cash_entries` baru dibuat di F5. Tandanya ada di `PurchaseService::record()`. | Instruksi fase F2. |
+| F2-15 | Admin gudang bisa melihat stok outlet (pilih lokasi di Stok Gudang) tetapi hanya baca. Daftar pembelian hanya ada di area gudang; pemilik boleh melihat foto nota lewat route foto. | INV-1. Laporan persediaan (REP-5) ada di F6. |
+| F2-16 | Seeder dev (`StockSeeder`, hanya non-production) mengisi saldo awal **placeholder** lewat `adjustment` bercatatan "Saldo awal (placeholder)" dan stok minimum placeholder. Idempoten: lokasi yang sudah punya ledger dilewati. | §12; data asli `[TBD]`. |

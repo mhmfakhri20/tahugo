@@ -53,6 +53,16 @@ class Item extends Model
     }
 
     /**
+     * Stock balances of this item per location.
+     *
+     * @return HasMany<StockBalance, $this>
+     */
+    public function stockBalances(): HasMany
+    {
+        return $this->hasMany(StockBalance::class);
+    }
+
+    /**
      * @param  Builder<Item>  $query
      */
     #[Scope]

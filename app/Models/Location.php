@@ -85,6 +85,16 @@ class Location extends Model
     }
 
     /**
+     * Stock balances held at this location.
+     *
+     * @return HasMany<StockBalance, $this>
+     */
+    public function stockBalances(): HasMany
+    {
+        return $this->hasMany(StockBalance::class);
+    }
+
+    /**
      * @param  Builder<Location>  $query
      */
     #[Scope]

@@ -33,4 +33,32 @@ class LocationPolicy
     {
         return $user->isOwner();
     }
+
+    /**
+     * INV-1: owner & warehouse admin see stock of every location; outlet staff only their outlet.
+     */
+    public function viewStock(User $user, Location $location): bool
+    {
+        return $this->view($user, $location);
+    }
+
+    /**
+     * INV-9: outlet staff record waste at their outlet, the warehouse admin at a warehouse.
+     */
+    public function recordWaste(User $user, Location $location): bool
+    {
+        if ($user->isOutletStaff()) {
+            return $user->location_id === $location->id;
+        }
+
+        return $user->isWarehouseAdmin() && $location->isWarehouse();
+    }
+
+    /**
+     * §6.6: stock adjustments are owner only.
+     */
+    public function adjustStock(User $user, Location $location): bool
+    {
+        return $user->isOwner();
+    }
 }

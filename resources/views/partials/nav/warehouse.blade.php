@@ -8,7 +8,7 @@
 <flux:sidebar.item icon="shopping-bag" :href="route('warehouse.purchases')" :current="request()->routeIs('warehouse.purchases*')" wire:navigate>
     Pembelian
 </flux:sidebar.item>
-<flux:sidebar.item icon="truck" :href="route('warehouse.shipments')" :current="request()->routeIs('warehouse.shipments*')" wire:navigate>
+<flux:sidebar.item icon="truck" :href="route('warehouse.shipments')" :current="request()->routeIs('warehouse.shipments*', 'warehouse.requests*')" wire:navigate>
     Pengiriman
 </flux:sidebar.item>
 <flux:sidebar.item icon="document-chart-bar" :href="route('warehouse.reports')" :current="request()->routeIs('warehouse.reports*')" wire:navigate>

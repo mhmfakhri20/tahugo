@@ -1,5 +1,9 @@
 <?php
 
+use App\Models\Item;
+use App\Models\Location;
+use App\Models\User;
+use App\Services\StockService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,7 +48,34 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Inventory test fixture: 1 warehouse, outlets A & B, one user per role, two items.
+ *
+ * @return object{warehouse: Location, outletA: Location, outletB: Location, owner: User, admin: User, staffA: User, staffB: User, tahu: Item, saus: Item}
+ */
+function inventoryWorld(): object
 {
-    // ..
+    $warehouse = Location::factory()->warehouse()->create(['code' => 'GDG', 'name' => 'Gudang Solo']);
+    $outletA = Location::factory()->outlet()->create(['code' => 'FJI', 'name' => 'Outlet A']);
+    $outletB = Location::factory()->outlet()->create(['code' => 'BKK', 'name' => 'Outlet B']);
+
+    return (object) [
+        'warehouse' => $warehouse,
+        'outletA' => $outletA,
+        'outletB' => $outletB,
+        'owner' => User::factory()->owner()->create(),
+        'admin' => User::factory()->warehouseAdmin()->create(),
+        'staffA' => User::factory()->outletStaff($outletA)->create(),
+        'staffB' => User::factory()->outletStaff($outletB)->create(),
+        'tahu' => Item::factory()->create(['name' => 'Tahu mentah', 'unit' => 'pcs']),
+        'saus' => Item::factory()->create(['name' => 'Saus', 'unit' => 'sachet']),
+    ];
+}
+
+/**
+ * Current cached balance as a normalized "0.000" string.
+ */
+function stockOf(Location $location, Item $item): string
+{
+    return app(StockService::class)->balance($location, $item);
 }
