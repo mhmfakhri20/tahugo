@@ -5,22 +5,53 @@ use App\Models\Location;
 use App\Models\StockRequest;
 use App\Services\AttendanceService;
 use App\Services\CashService;
+use App\Services\ReportService;
 use App\Services\StockOverviewService;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
+/*
+ * Dashboard pemilik (REP-1): stok menipis (INV-2) paling atas, metrik hari ini vs kemarin, tren 7 hari,
+ * komposisi kanal, pengeluaran & permintaan menunggu, absensi hari ini. Filter: semua cabang / satu outlet.
+ */
 new #[Title('Dashboard')] class extends Component {
+    #[Url(except: '')]
+    public string $outlet = '';
+
+    public function outletId(): ?int
+    {
+        return ctype_digit($this->outlet) ? (int) $this->outlet : null;
+    }
+
     /**
-     * Active outlets & warehouses.
+     * @return Collection<int, Location>
+     */
+    #[Computed]
+    public function outletOptions(): Collection
+    {
+        return Location::query()->outlets()->active()->orderBy('name')->get();
+    }
+
+    /**
+     * Active outlets & warehouses (or only the selected outlet).
      *
      * @return Collection<int, Location>
      */
     #[Computed]
     public function locations(): Collection
     {
-        return Location::where('is_active', true)->orderBy('type')->orderBy('name')->get();
+        return Location::where('is_active', true)
+            ->when($this->outletId(), fn ($q, $id) => $q->whereKey($id))
+            ->orderBy('type')->orderBy('name')->get();
+    }
+
+    #[Computed]
+    public function metrics(): array
+    {
+        return app(ReportService::class)->dashboard($this->outletId());
     }
 
     /**
@@ -72,7 +103,15 @@ new #[Title('Dashboard')] class extends Component {
 }; ?>
 
 <div class="flex w-full flex-col gap-6">
-    <x-greeting :name="auth()->user()->name" description="Pantau usaha Anda hari ini dari satu tempat." />
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <x-greeting :name="auth()->user()->name" :description="'Pantau usaha Anda hari ini, '.now()->translatedFormat('l, d F Y').'.'" />
+        <flux:select wire:model.live="outlet" class="sm:max-w-60" aria-label="Pilih cabang">
+            <flux:select.option value="">Semua cabang</flux:select.option>
+            @foreach ($this->outletOptions as $option)
+                <flux:select.option :value="$option->id">{{ $option->name }}</flux:select.option>
+            @endforeach
+        </flux:select>
+    </div>
 
     <div class="grid items-start gap-6 lg:grid-cols-2">
         {{-- Stok menipis (INV-2) --}}
@@ -148,6 +187,106 @@ new #[Title('Dashboard')] class extends Component {
                 </ul>
                 <div>
                     <flux:button variant="ghost" size="sm" icon:trailing="arrow-right" :href="route('owner.verification')" wire:navigate>Buka verifikasi</flux:button>
+                </div>
+            @endif
+        </section>
+    </div>
+
+    {{-- Metrik hari ini (REP-1) --}}
+    @php
+        $m = $this->metrics;
+        $pct = fn (?float $value) => number_format(abs($value ?? 0), 1, ',', '.').'%';
+        $palette = ['bg-primary', 'bg-brown', 'bg-success', 'bg-warning'];
+    @endphp
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <x-metric-card label="Omzet hari ini" :value="rupiah($m['revenue'])" icon="wallet"
+            :trend="$m['revenue_change'] !== null ? $pct($m['revenue_change']).' dari kemarin' : null"
+            :trend-direction="($m['revenue_change'] ?? 0) < 0 ? 'down' : 'up'"
+            :hint="$m['revenue_change'] === null ? 'Kemarin belum ada penjualan' : null" />
+        <x-metric-card label="Transaksi" :value="number_format($m['count'], 0, ',', '.')" icon="receipt-percent"
+            :hint="($m['count_diff'] >= 0 ? '+' : '').$m['count_diff'].' dari kemarin'" />
+        <x-metric-card label="Pengeluaran outlet" :value="rupiah($m['expenses'])" icon="banknotes" hint="Hari ini, kecuali yang ditolak" />
+        <x-metric-card label="Laba kotor" :value="($m['gross'] < 0 ? '−' : '').rupiah(abs($m['gross']))" icon="chart-bar" hint="Omzet − HPP − pengeluaran disetujui" />
+        <div class="flex flex-col gap-3 rounded-xl border border-border bg-surface p-5">
+            <div class="flex items-start justify-between gap-3">
+                <div class="text-sm text-muted">Selisih kas shift</div>
+                <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-soft"><flux:icon name="scale" class="size-5 text-brown" /></div>
+            </div>
+            <div @class(['text-[26px] leading-tight font-bold lg:text-3xl', 'text-danger' => $m['variance'] < 0])>{{ ($m['variance'] < 0 ? '−' : '').rupiah(abs($m['variance'])) }}</div>
+            <div class="text-sm text-muted">
+                {{ $m['shifts_closed'] }} shift ditutup hari ini @if ($m['shifts_short']) · <span class="text-danger">{{ $m['shifts_short'] }} kurang</span>@endif
+            </div>
+        </div>
+    </div>
+
+    <div class="grid items-start gap-6 lg:grid-cols-3">
+        <section class="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4 sm:p-6 lg:col-span-2">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-semibold text-text">Performa penjualan 7 hari</h2>
+                    <p class="text-sm text-muted">{{ \App\Support\Period::lastDays(7)->label() }} dibanding 7 hari sebelumnya</p>
+                </div>
+                <div class="text-end">
+                    <div class="text-2xl font-bold">{{ rupiah($m['week_revenue']) }}</div>
+                    @if ($m['week_change'] !== null)
+                        <x-status-badge :variant="$m['week_change'] >= 0 ? 'success' : 'danger'">{{ $m['week_change'] >= 0 ? '↑' : '↓' }} {{ $pct($m['week_change']) }}</x-status-badge>
+                    @endif
+                </div>
+            </div>
+            <x-chart :config="[
+                'type' => 'bar',
+                'labels' => $m['trend']->map(fn ($d) => \Carbon\CarbonImmutable::parse($d['date'])->translatedFormat('d M'))->all(),
+                'datasets' => [
+                    ['label' => '7 hari sebelumnya', 'data' => $m['trend']->pluck('previous')->all(), 'color' => 'border'],
+                    ['label' => 'Periode ini', 'data' => $m['trend']->pluck('current')->all(), 'color' => 'primary'],
+                ],
+            ]" />
+            <details class="text-sm">
+                <summary class="cursor-pointer text-muted">Lihat angka per hari</summary>
+                <ul class="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 sm:grid-cols-4">
+                    @foreach ($m['trend'] as $day)
+                        <li class="flex justify-between gap-2"><span class="text-muted">{{ \Carbon\CarbonImmutable::parse($day['date'])->translatedFormat('d M') }}</span><span>{{ rupiah($day['current']) }}</span></li>
+                    @endforeach
+                </ul>
+            </details>
+        </section>
+
+        <section class="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4 sm:p-6">
+            <div>
+                <h2 class="text-lg font-semibold text-text">Komposisi kanal</h2>
+                <p class="text-sm text-muted">Omzet 7 hari terakhir per kanal.</p>
+            </div>
+            @if ($m['channels']->sum('revenue') === 0)
+                <x-empty-state icon="chart-pie" title="Belum ada penjualan" />
+            @else
+                <x-chart height="h-40" :config="[
+                    'type' => 'doughnut',
+                    'labels' => $m['channels']->map(fn ($c) => $c['channel']->label())->all(),
+                    'datasets' => [['label' => 'Omzet', 'data' => $m['channels']->pluck('revenue')->all(), 'color' => ['primary', 'brown', 'success', 'warning']]],
+                    'legend' => false,
+                ]" />
+                <ul class="flex flex-col gap-2 text-sm">
+                    @foreach ($m['channels'] as $i => $row)
+                        <li class="flex items-center justify-between gap-2">
+                            <span class="flex items-center gap-2"><span class="size-2.5 rounded-full {{ $palette[$i] }}"></span>{{ $row['channel']->label() }}</span>
+                            <span><span class="font-medium">{{ rupiah($row['revenue']) }}</span> <span class="text-muted">{{ number_format($row['share'], 1, ',', '.') }}%</span></span>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+
+            @if (! $outlet && $m['outlets_today']->count() > 1)
+                <div class="border-t border-border pt-4">
+                    <h3 class="mb-2 font-semibold">Penjualan per cabang hari ini</h3>
+                    <ul class="flex flex-col gap-3 text-sm">
+                        @foreach ($m['outlets_today'] as $row)
+                            <li class="flex flex-col gap-1">
+                                <div class="flex justify-between gap-2"><span class="font-medium">{{ $row['outlet']->name }}</span><span class="font-semibold">{{ rupiah($row['revenue']) }}</span></div>
+                                <div class="flex justify-between gap-2 text-xs text-muted"><span>{{ $row['count'] }} transaksi</span><span>{{ number_format($row['share'], 1, ',', '.') }}%</span></div>
+                                <div class="h-1.5 overflow-hidden rounded-full bg-border"><div class="h-full rounded-full bg-primary" style="width: {{ $row['share'] }}%"></div></div>
+                            </li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
         </section>
@@ -242,30 +381,4 @@ new #[Title('Dashboard')] class extends Component {
         @endif
     </section>
 
-    <section class="flex flex-col gap-3">
-        <h2 class="text-lg font-semibold text-text">Cabang & gudang aktif</h2>
-
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            @foreach ($this->locations as $location)
-                <div wire:key="location-{{ $location->id }}" class="flex items-start justify-between gap-3 rounded-xl border border-border bg-surface p-5">
-                    <div class="min-w-0">
-                        <x-status-badge :variant="$location->isOutlet() ? 'soft' : 'muted'">{{ $location->type->label() }}</x-status-badge>
-                        <div class="mt-3 truncate text-lg font-semibold text-text">{{ $location->name }}</div>
-                        <div class="text-sm text-muted">Kode: {{ $location->code }}</div>
-                    </div>
-                    <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-soft">
-                        <flux:icon :name="$location->isOutlet() ? 'building-storefront' : 'archive-box'" class="size-5 text-brown" />
-                    </div>
-                </div>
-            @endforeach
-        </div>
-    </section>
-
-    <div class="rounded-xl border border-border bg-surface p-4 sm:p-6">
-        <x-empty-state
-            icon="chart-bar"
-            title="Ringkasan penjualan segera hadir"
-            description="Total penjualan dan pengeluaran tiap cabang akan tampil di sini."
-        />
-    </div>
 </div>

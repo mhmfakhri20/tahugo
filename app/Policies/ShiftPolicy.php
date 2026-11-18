@@ -41,6 +41,14 @@ class ShiftPolicy
     }
 
     /**
+     * Daily outlet report (REP-2): the owner, or staff of that outlet (BR-7).
+     */
+    public function viewReport(User $user, Shift $shift): bool
+    {
+        return $this->view($user, $shift);
+    }
+
+    /**
      * Closing photo: the owner, or the staff member who took it.
      */
     public function viewPhoto(User $user, Shift $shift): bool

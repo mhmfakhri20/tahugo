@@ -20,6 +20,19 @@ new #[Title('Beranda')] class extends Component {
     }
 
     /**
+     * Latest closed shift of this outlet, for the daily report link (REP-2).
+     */
+    #[Computed]
+    public function lastClosedShift(): ?\App\Models\Shift
+    {
+        return \App\Models\Shift::query()
+            ->where('location_id', auth()->user()->location_id)
+            ->whereNotNull('closed_at')
+            ->latest('closed_at')
+            ->first();
+    }
+
+    /**
      * Own attendance of the last 7 days, one row per day.
      *
      * @return Collection<string, array{in: Attendance|null, out: Attendance|null}>
@@ -167,6 +180,17 @@ new #[Title('Beranda')] class extends Component {
             @endif
         @endif
     </section>
+
+    @if ($last = $this->lastClosedShift)
+        <a href="{{ route('reports.daily', $last) }}" wire:navigate class="flex min-h-14 items-center gap-3 rounded-xl border border-border bg-surface p-4">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-soft"><flux:icon name="document-text" class="size-5 text-brown" /></div>
+            <div class="min-w-0 flex-1">
+                <div class="font-semibold">Laporan harian</div>
+                <div class="text-base text-muted">Shift {{ $last->closed_at->translatedFormat('d M, H.i') }}</div>
+            </div>
+            <flux:icon name="chevron-right" class="size-5 text-muted" />
+        </a>
+    @endif
 
     {{-- Riwayat --}}
     <section class="flex flex-col gap-3">

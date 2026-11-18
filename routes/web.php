@@ -19,6 +19,8 @@ Route::middleware(['auth'])->group(function () {
     // Foto absen & foto tutup shift: hanya pemilik atau pemilik foto (ATT-4, NFR-5).
     Route::get('attendances/{attendance}/photo', AttendancePhotoController::class)->name('attendances.photo');
     Route::get('shifts/{shift}/photo', ShiftPhotoController::class)->name('shifts.photo');
+    // Laporan Harian Outlet (REP-2): pemilik & penjaga outlet tersebut.
+    Route::livewire('reports/daily/{shift}', 'pages::reports.daily')->name('reports.daily');
     // Foto nota pengeluaran: pemilik & pencatatnya (CASH-1, CASH-4).
     Route::get('cash-entries/{cashEntry}/receipt', CashReceiptController::class)->name('cash-entries.receipt');
 
@@ -35,7 +37,15 @@ Route::middleware(['auth'])->group(function () {
         Route::livewire('stock/{location}/{item}', 'pages::stock.card')->name('stock.card');
         Route::livewire('requests/create', 'pages::stock-requests.create')->name('requests.create');
         Route::livewire('requests/{stockRequest}', 'pages::stock-requests.show')->name('requests.show');
-        Route::view('reports', 'pages.coming-soon', ['title' => 'Laporan'])->name('reports');
+        // Laporan (F6, REP-2..6)
+        Route::get('reports', fn () => redirect()->route('owner.reports.sales'))->name('reports');
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::livewire('sales', 'pages::reports.sales')->name('sales');
+            Route::livewire('cash', 'pages::reports.cash')->name('cash');
+            Route::livewire('inventory', 'pages::reports.inventory')->name('inventory');
+            Route::livewire('performance', 'pages::reports.performance')->name('performance');
+            Route::livewire('daily', 'pages::reports.daily-list')->name('daily');
+        });
         Route::livewire('attendance', 'pages::owner.attendance')->name('attendance');
         // Pengaturan: master data & user management (F1).
         Route::get('settings', fn () => redirect()->route('owner.settings.users'))->name('settings');
@@ -85,7 +95,7 @@ Route::middleware(['auth'])->group(function () {
         Route::livewire('shipments', 'pages::warehouse.shipments')->name('shipments');
         Route::livewire('business-expenses', 'pages::business-expenses')->name('business-expenses');
         Route::livewire('requests/{stockRequest}', 'pages::stock-requests.show')->name('requests.show');
-        Route::view('reports', 'pages.coming-soon', ['title' => 'Laporan Persediaan'])->name('reports');
+        Route::livewire('reports', 'pages::reports.inventory')->name('reports');
         Route::get('{path}', fn () => abort(404))->where('path', '.*')->name('fallback');
     });
 });

@@ -67,6 +67,11 @@ class AppServiceProvider extends ServiceProvider
             && $user->location_id !== null);
 
         Gate::define('access-warehouse', fn (User $user): bool => $user->role === Role::WarehouseAdmin);
+
+        // Reports (F6): money is for the owner only; inventory also for the warehouse admin.
+        Gate::define('view-financial-reports', fn (User $user): bool => $user->role === Role::Owner);
+
+        Gate::define('view-inventory-reports', fn (User $user): bool => in_array($user->role, [Role::Owner, Role::WarehouseAdmin], true));
     }
 
     /**

@@ -144,3 +144,37 @@ select:focus[data-flux-control] {
 [data-flux-button].btn-danger {
     @apply bg-danger/10 text-danger shadow-none hover:bg-danger/15;
 }
+
+/* Laporan Harian Outlet (REP-2): tampilan cetak. Navigasi, tombol, dan toast disembunyikan. */
+@media print {
+    @page {
+        margin: 12mm;
+    }
+
+    body {
+        background: #fff !important;
+        color: #000 !important;
+    }
+
+    [data-flux-sidebar],
+    [data-flux-header],
+    [data-flux-sidebar-toggle],
+    body > header,
+    body > nav,
+    .no-print {
+        display: none !important;
+    }
+
+    [data-flux-main],
+    main {
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: none !important;
+    }
+
+    .print-card {
+        break-inside: avoid;
+        border-color: #ccc !important;
+        box-shadow: none !important;
+    }
+}

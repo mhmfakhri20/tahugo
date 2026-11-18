@@ -4,7 +4,7 @@ use App\Models\Shift;
 use App\Models\User;
 
 $areas = [
-    'owner' => ['owner.dashboard', 'owner.verification', 'owner.reports', 'owner.attendance',
+    'owner' => ['owner.dashboard', 'owner.verification', 'owner.reports.sales', 'owner.reports.cash', 'owner.reports.inventory', 'owner.reports.performance', 'owner.reports.daily', 'owner.attendance',
         'owner.settings.users', 'owner.settings.locations', 'owner.settings.items', 'owner.settings.products',
         'owner.settings.products.create', 'owner.settings.expense-categories', 'owner.stock', 'owner.requests.create',
     ],
