@@ -160,7 +160,10 @@ new #[Title('Kartu stok')] class extends Component {
                     </li>
                 @endforeach
             </ul>
-            <div>{{ $this->movements->links() }}</div>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <span class="text-base text-muted">Menampilkan {{ $this->movements->count() }} dari {{ $this->movements->total() }} mutasi</span>
+                {{ $this->movements->links() }}
+            </div>
         @else
             <x-data-table>
                 <x-slot:head>

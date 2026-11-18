@@ -116,7 +116,7 @@ new #[Title('Dashboard')] class extends Component {
     <div class="grid items-start gap-6 lg:grid-cols-2">
         {{-- Stok menipis (INV-2) --}}
         <section class="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4 sm:p-6">
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <h2 class="text-lg font-semibold text-text">Stok menipis</h2>
                     <p class="text-sm text-muted">Bahan di bawah stok minimum atau habis.</p>
@@ -155,7 +155,7 @@ new #[Title('Dashboard')] class extends Component {
 
         {{-- Permintaan menunggu --}}
         <section class="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4 sm:p-6">
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <h2 class="text-lg font-semibold text-text">Permintaan menunggu</h2>
                     <p class="text-sm text-muted">Permintaan bahan dari outlet yang perlu Anda setujui.</p>
@@ -208,7 +208,7 @@ new #[Title('Dashboard')] class extends Component {
         <x-metric-card label="Pengeluaran outlet" :value="rupiah($m['expenses'])" icon="banknotes" hint="Hari ini, kecuali yang ditolak" />
         <x-metric-card label="Laba kotor" :value="($m['gross'] < 0 ? '−' : '').rupiah(abs($m['gross']))" icon="chart-bar" hint="Omzet − HPP − pengeluaran disetujui" />
         <div class="flex flex-col gap-3 rounded-xl border border-border bg-surface p-5">
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="text-sm text-muted">Selisih kas shift</div>
                 <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-soft"><flux:icon name="scale" class="size-5 text-brown" /></div>
             </div>
@@ -295,7 +295,7 @@ new #[Title('Dashboard')] class extends Component {
     {{-- Pengeluaran menunggu verifikasi (REP-1, CASH-3) --}}
     @php $expenseRows = $this->expensesByOutlet; @endphp
     <section class="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4 sm:p-6">
-        <div class="flex items-start justify-between gap-3">
+        <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
                 <h2 class="text-lg font-semibold text-text">Pengeluaran menunggu verifikasi</h2>
                 <p class="text-sm text-muted">Pengeluaran outlet yang belum Anda periksa, dan total pengeluaran hari ini.</p>
@@ -327,7 +327,7 @@ new #[Title('Dashboard')] class extends Component {
 
     {{-- Absensi hari ini (REP-1, ATT-7) --}}
     <section class="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4 sm:p-6">
-        <div class="flex items-start justify-between gap-3">
+        <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
                 <h2 class="text-lg font-semibold text-text">Absensi hari ini</h2>
                 <p class="text-sm text-muted">Siapa yang sudah absen dan status shift tiap outlet.</p>
@@ -341,7 +341,7 @@ new #[Title('Dashboard')] class extends Component {
             <div class="grid gap-4 md:grid-cols-2">
                 @foreach ($this->attendanceToday as $row)
                     <div wire:key="att-today-{{ $row['outlet']->id }}" class="flex flex-col gap-3 rounded-xl border border-border p-4">
-                        <div class="flex items-start justify-between gap-3">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <div class="truncate font-semibold">{{ $row['outlet']->name }}</div>
                                 <div class="text-sm text-muted">

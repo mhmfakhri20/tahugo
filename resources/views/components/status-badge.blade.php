@@ -25,7 +25,8 @@
     };
 @endphp
 
-<span {{ $attributes->class(['inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-sm font-medium', $classes]) }}>
+{{-- shrink-0 + nowrap: badge tidak terpotong/terlipat di samping teks panjang pada layar kecil. --}}
+<span {{ $attributes->class(['inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-sm font-medium whitespace-nowrap', $classes]) }}>
     <span class="size-1.5 rounded-full {{ $dot }}" aria-hidden="true"></span>
     {{ $slot }}
 </span>

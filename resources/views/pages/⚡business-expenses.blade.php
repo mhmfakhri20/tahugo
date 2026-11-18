@@ -148,7 +148,7 @@ new #[Title('Pengeluaran usaha')] class extends Component {
         </form>
 
         <section class="flex flex-col gap-5 rounded-xl border border-border bg-surface p-4 sm:p-6 lg:col-span-2">
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <h2 class="text-lg font-semibold">Riwayat pengeluaran usaha</h2>
                     <p class="text-sm text-muted">Termasuk pembelian bahan oleh gudang (otomatis).</p>

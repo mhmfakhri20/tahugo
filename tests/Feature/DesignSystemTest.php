@@ -79,3 +79,17 @@ test('views do not use default tailwind palette colors', function () {
 
     expect($offenders)->toBe([]);
 });
+
+test('pagination has no English "Showing … results" text and keeps the Indonesian footer', function () {
+    $owner = User::factory()->owner()->create();
+    App\Models\AuditLog::query()->insert(collect(range(1, 30))->map(fn ($i) => [
+        'user_id' => $owner->id, 'action' => 'auth.login', 'created_at' => now(),
+    ])->all());
+
+    $this->actingAs($owner)->get(route('owner.settings.audit-log'))
+        ->assertOk()
+        ->assertSee('Menampilkan 25 dari 30 catatan')
+        ->assertSee('Ke halaman 2')
+        ->assertDontSee('Showing')
+        ->assertDontSee('results');
+});

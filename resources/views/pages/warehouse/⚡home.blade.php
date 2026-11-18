@@ -37,7 +37,7 @@ new #[Title('Beranda')] class extends Component {
 
     <div class="grid items-start gap-6 lg:grid-cols-2">
         <section class="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4 sm:p-6">
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <h2 class="text-lg font-semibold text-text">Permintaan siap dikirim</h2>
                     <p class="text-sm text-muted">Sudah disetujui pemilik, urut dari yang paling lama.</p>

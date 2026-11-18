@@ -255,7 +255,7 @@ new #[Title('Permintaan stok')] class extends Component {
                 <ul class="flex flex-col gap-3">
                     @foreach ($r->items as $line)
                         <li wire:key="line-{{ $line->id }}" class="flex flex-col gap-3 rounded-xl border border-border p-4">
-                            <div class="flex items-start justify-between gap-3">
+                            <div class="flex flex-wrap items-start justify-between gap-3">
                                 <div class="font-semibold">{{ $line->item->name }}</div>
                                 @if ($line->hasReceiveDiscrepancy())
                                     <x-status-badge variant="warning">Selisih {{ qty($line->receiveDifference()) }}</x-status-badge>

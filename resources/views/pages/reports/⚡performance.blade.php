@@ -85,7 +85,7 @@ new #[Title('Kinerja outlet')] class extends Component {
             <ul class="grid gap-4 md:grid-cols-2">
                 @foreach ($this->rows as $row)
                     <li class="flex flex-col gap-2 rounded-xl border border-border p-4">
-                        <div class="flex items-start justify-between gap-3">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
                             <div class="font-semibold">{{ $row['outlet']->name }}</div>
                             @if ($row['target'] === null)
                                 <x-status-badge variant="muted">Target belum diatur</x-status-badge>

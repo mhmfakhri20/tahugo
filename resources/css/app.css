@@ -94,6 +94,15 @@
 }
 
 /*
+ * Responsive (pemilik & gudang): grid children may shrink below their content width.
+ * Without this, a long text with `truncate` (e.g. an outlet name) makes its card wider than the
+ * screen on phones. Tables keep their own horizontal scroll (x-data-table).
+ */
+[data-flux-main] .grid > * {
+    min-width: 0;
+}
+
+/*
  * Field = label, input, helper text stacked. `content-start` keeps them packed at the top when the
  * field is stretched in a form grid next to a taller field (e.g. one with helper text), so labels
  * and inputs in the same row stay aligned.
