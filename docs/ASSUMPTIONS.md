@@ -15,7 +15,7 @@ Catatan keputusan untuk hal yang tidak diatur PRD (lihat aturan di `CLAUDE.md`).
 | F0-7 | URL area per peran: `/owner`, `/outlet`, `/warehouse`. `/` dan `/dashboard` mengarahkan user ke beranda perannya (`Role::homeRoute()`). | AUTH-2. Kode/URL berbahasa Inggris sesuai konvensi. |
 | F0-8 | Akses area dikunci dengan Gate `access-owner`, `access-outlet`, `access-warehouse` (middleware `can:`). `outlet_staff` tanpa `location_id` ditolak (403). Isolasi per data (BR-7) akan memakai Policy di fase fitur. | AUTH-3, AUTH-4. |
 | F0-9 | Menu yang fiturnya belum dibangun membuka halaman "Fitur ini sedang disiapkan" (`pages/coming-soon.blade.php`). | Supaya navigasi §11 lengkap sejak awal. |
-| F0-10 | Owner & admin gudang memakai sidebar (laci di HP). Penjaga outlet memakai **bottom navigation** 5 menu; menu "Akun" membuka halaman profil yang juga berisi tombol Keluar. | §11 PRD. |
+| F0-10 | Owner & admin gudang memakai sidebar (laci di HP). Penjaga outlet memakai **bottom navigation** 5 menu; menu "Profil" membuka halaman profil yang juga berisi Bantuan, Ubah password, Tampilan, dan tombol Keluar. | §11 PRD. |
 | F0-11 | Label bottom navigation berukuran 12px (ikon 24px, area sentuh ≥ 64px). Teks lain ≥ 16px. | 5 menu harus muat di lebar 360px ("Pengeluaran" tidak muat di 16px). |
 | F0-12 | Koordinat, alamat, dan jam operasional outlet di seed = `null`. | `[TBD]` PRD §12/§15-2. Wajib diisi sebelum fitur absensi (F3) dipakai. |
 | F0-13 | Akun dev (`owner`, `outlet_fji`, `outlet_bkk`, `gudang`, password `password`) hanya di-seed bila `APP_ENV` bukan `production` (`DevUserSeeder`). | §12 PRD. |
@@ -159,3 +159,34 @@ Catatan keputusan untuk hal yang tidak diatur PRD (lihat aturan di `CLAUDE.md`).
 | F6-11 | Laporan persediaan dipakai bersama pemilik (tab Laporan) & admin gudang (menu Laporan Persediaan). Kolom "Total qty" di mutasi per tipe menjumlahkan semua bahan dengan satuan berbeda, jadi hanya indikasi; rincian per bahan lewat kartu stok. | REP-5. |
 | F6-12 | Grafik memakai Chart.js 4 (`resources/js/charts.js`), warna dari token CSS; grafik `aria-hidden` dan selalu disertai angka/tabel di sebelahnya. | REP-8, aksesibilitas. |
 | F6-13 | `DemoSeeder` (tidak dipanggil `DatabaseSeeder`, ditolak di production, tidak jalan dua kali): 14 hari + hari ini (shift masih buka) untuk tiap outlet aktif, semuanya lewat service dengan jam disimulasikan (`Date::setTestNow`). Bila koordinat/jam/target outlet kosong, diisi **placeholder** (FJI target Rp15.000.000, BKK tanpa target agar kedua keadaan terlihat). Foto absen/nota = PNG 1×1. | §12; `[TBD]` §15-2/15-9. |
+
+## F7a — Audit log, ekspor, bantuan, hardening
+
+| # | Asumsi | Alasan |
+|---|---|---|
+| F7a-1 | `audit_logs` mengikuti §9 ditambah kolom `location_id` (filter outlet di halaman audit) dan `user_agent`. Hanya ada `created_at`. Model `AuditLog` menolak `update`/`delete` dan tidak ada route ubah/hapus (append-only). | AUD-1/2. |
+| F7a-2 | Log ditulis lewat `AuditService::log()` (helper `audit()`) **di dalam DB transaction aksinya**: aksi batal → log batal; log gagal → aksi batal. Nilai lama/baru hanya field yang berubah; `password`, `remember_token`, `*token*`, `*secret*`, `two_factor_*` selalu dibuang. Reset password hanya mencatat `password_changed: true`; login gagal hanya mencatat username yang dicoba. | AUD-1, NFR-4, NFR-5. |
+| F7a-3 | Aksi yang dicatat: login/gagal/logout, void transaksi, tutup & koreksi shift, setujui/tolak pengeluaran, setujui/tolak/kirim/terima permintaan stok, penyesuaian & waste stok, tambah/ubah produk (harga per kanal & resep), tambah/ubah/aktif/nonaktif lokasi, tambah/ubah/aktif/nonaktif/reset password pengguna. Perubahan bahan baku & kategori pengeluaran tidak dicatat. | Daftar AUD-1. |
+| F7a-4 | **Koreksi shift oleh pemilik** (SHF-5) dibuat minimal: hanya kas fisik yang bisa dikoreksi, alasan wajib, selisih dihitung ulang, kas seharusnya tersimpan tidak berubah; tombol "Koreksi kas fisik" di Laporan Harian Outlet. | SHF-5/BR-6; tertunda dari F3-12. |
+| F7a-5 | Ekspor memakai **maatwebsite/excel 4.0** (PhpSpreadsheet 5) dan **barryvdh/laravel-dompdf 3.1** — keduanya mendukung Laravel 13 / PHP 8.5 (dicek `composer show -a`). Versi 4 mewajibkan interface penanda `Export`. Di Windows, constraint composer memakai `~` karena `^` dimakan `composer.bat`. | REP-7, §8. |
+| F7a-6 | Excel: tiap laporan multi-sheet, header tebal, angka rupiah tetap **numerik** dengan format `"Rp"#,##0`. Nama file `laporan-{jenis}_{KODE|semua}_{dari}_{sampai}.xlsx`. Ekspor memakai filter & Gate/Policy yang sama dengan halamannya (validasi lewat `ReportFilterRequest`). | REP-7, NFR-4. |
+| F7a-7 | PDF (Laporan Harian Outlet & Laba-Rugi) memakai view khusus `resources/views/pdf/*` ber-CSS inline yang meniru tampilan cetak F6, karena dompdf tidak bisa memproses Tailwind. | REP-7. |
+| F7a-8 | **Logout idle (AUTH-6)**: pemilik & admin gudang 60 menit, penjaga outlet **600 menit (10 jam)** agar kasir tidak terputus di tengah shift (`config/tahugo.php`, env `IDLE_TIMEOUT_*`). `SESSION_LIFETIME` default dinaikkan ke 600 menit supaya tidak lebih pendek dari batas idle. | AUTH-6. |
+| F7a-9 | Upload direview: semua foto (absen, tutup shift, nota pembelian/pengeluaran) divalidasi `image`, `mimes:jpg,jpeg,png,webp`, `max:5120`, disimpan dengan nama acak (`store()`) di disk privat `local` (`storage/app/private`), dan hanya dilayani controller ber-Policy. Tidak ada salinan di disk publik. | NFR-4. |
+| F7a-10 | Validasi input Livewire tetap memakai `validate()` + aturan bisnis di Service (F1-8); FormRequest dipakai pada controller (ekspor). Semua model memakai `#[Fillable]` (diuji). Throttle login 5×/menit per username+IP. `Model::preventLazyLoading()` aktif di non-production. | NFR-4, NFR-7. |
+| F7a-11 | Halaman error 403/404/419/429/500/503 berbahasa Indonesia memakai layout tanpa query DB/Livewire. | NFR-1. |
+| F7a-12 | Bantuan: isi per peran di `app/Support/HelpContent.php` (dipakai halaman `/help`) dan `docs/USER_GUIDE.md` dibuat dari sumber yang sama. Panduan **hanya teks** (tanpa gambar, keputusan tim): tiap tugas berisi "Kapan", langkah bernomor yang menyebut nama tombol persis, dan "Perhatikan"; ditambah ringkasan urutan kerja per peran dan 9 masalah umum. Penjaga membuka Bantuan dari halaman Akun dan tautan di Beranda (bottom nav tetap 5 menu). | NFR-8, §11. |
+| F7a-13 | Seeder dev (`DevUserSeeder`, `StockSeeder`, `PosPlaceholderSeeder`, `CashEntrySeeder`) kini juga punya guard production sendiri, selain di `DatabaseSeeder`; `DemoSeeder` sudah sejak F6. | NFR-4. |
+| F7a-14 | `composer audit` & `npm audit` saat F7a: 0 kerentanan. | NFR-4. |
+
+## Pekerjaan lanjutan
+
+Hal yang sengaja belum dibuat atau masih `[TBD]`, untuk fase berikut / setelah UAT:
+
+1. **Deployment (F7b)**: hosting, domain, HTTPS, cron scheduler, `APP_ENV=production`, backup database & storage.
+2. **Void oleh pemilik** untuk transaksi di shift yang sudah ditutup (F4-9); sekarang hanya koreksi kas fisik shift (F7a-4).
+3. **Komisi platform** GoFood/GrabFood/ShopeeFood belum dicatat; omzet platform masih bruto (F6-3).
+4. **HPP historis**: HPP memakai harga beli terakhir, bukan harga saat bahan dipakai (F6-4).
+5. **Audit perubahan bahan baku & kategori pengeluaran** belum dicatat (F7a-3).
+6. Data asli `[TBD]` PRD §15: produk, harga, resep, koordinat & jam outlet, QRIS, retensi foto, target omzet.
+7. Outlet yang buka melewati tengah malam (F1-12, F3-3).

@@ -79,7 +79,7 @@ test('outlet staff sees the bottom navigation and their outlet name', function (
     $this->actingAs($user)->get(route('outlet.home'))
         ->assertOk()
         ->assertSee($user->location->name)
-        ->assertSeeInOrder(['Beranda', 'Kasir', 'Pengeluaran', 'Stok', 'Akun']);
+        ->assertSeeInOrder(['Beranda', 'Kasir', 'Pengeluaran', 'Stok', 'Profil']);
 });
 
 test('owner sees the owner menu', function () {

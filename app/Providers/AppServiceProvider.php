@@ -2,10 +2,14 @@
 
 namespace App\Providers;
 
+use App\Enums\AuditAction;
 use App\Enums\Role;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -39,6 +43,9 @@ class AppServiceProvider extends ServiceProvider
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);
+
+        // NFR-7: surface N+1 queries during development & tests.
+        Model::preventLazyLoading(! app()->isProduction());
 
         DB::prohibitDestructiveCommands(
             app()->isProduction(),
@@ -82,6 +89,20 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(function (Login $event): void {
             if ($event->user instanceof User) {
                 $event->user->forceFill(['last_login_at' => now()])->saveQuietly();
+                audit(AuditAction::Login, $event->user, actor: $event->user);
+            }
+        });
+
+        // AUD-1: failed logins keep only the username that was tried (never the password).
+        Event::listen(function (Failed $event): void {
+            audit(AuditAction::LoginFailed, $event->user instanceof User ? $event->user : null, null, [
+                'username_attempt' => mb_substr((string) ($event->credentials['username'] ?? ''), 0, 100),
+            ], $event->user instanceof User ? $event->user : null);
+        });
+
+        Event::listen(function (Logout $event): void {
+            if ($event->user instanceof User) {
+                audit(AuditAction::Logout, $event->user, actor: $event->user);
             }
         });
     }

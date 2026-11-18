@@ -46,7 +46,9 @@ new #[Title('Laporan penjualan')] class extends Component {
 @endphp
 
 <div class="flex flex-col gap-6">
-    <x-page-header title="Laporan" :description="'Penjualan · '.$this->period->label().' · tanpa transaksi batal'" />
+    <x-page-header title="Laporan" :description="'Penjualan · '.$this->period->label().' · tanpa transaksi batal'">
+        <flux:button variant="primary" icon="arrow-down-tray" class="no-print" :href="route('owner.reports.sales.export', array_filter(compact('from', 'to', 'outlet')))">Ekspor Excel</flux:button>
+    </x-page-header>
     <x-report-tabs current="owner.reports.sales" :query="['from' => $from, 'to' => $to, 'outlet' => $outlet]" />
     <x-report-filters :options="$this->outletOptions" />
 

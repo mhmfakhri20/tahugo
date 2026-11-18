@@ -36,6 +36,11 @@ class PosPlaceholderSeeder extends Seeder
 
     public function run(): void
     {
+        // Development data only: never in production (NFR-4).
+        if (app()->isProduction()) {
+            return;
+        }
+
         $items = Item::query()->get()->keyBy('name');
 
         foreach (self::PLACEHOLDER as $name => $data) {

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AuditAction;
 use App\Enums\MovementType;
 use App\Enums\PaymentMethod;
 use App\Enums\SalesChannel;
@@ -188,13 +189,18 @@ class SaleService
                 );
             }
 
-            // TODO(F7, AUD-1): record the void (old/new values, reason, IP) in audit_logs.
             $locked->update([
                 'status' => SaleStatus::Void,
                 'void_reason' => mb_substr($reason, 0, 255),
                 'voided_by' => $user->id,
                 'voided_at' => now(),
             ]);
+
+            audit(AuditAction::SaleVoid, $locked,
+                ['status' => SaleStatus::Completed, 'number' => $locked->number, 'total' => $locked->total],
+                ['status' => SaleStatus::Void, 'void_reason' => $locked->void_reason],
+                $user,
+            );
 
             return $locked;
         });

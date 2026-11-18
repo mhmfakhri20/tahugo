@@ -196,7 +196,9 @@ new #[Title('Absensi')] class extends Component {
 @endphp
 
 <div class="flex flex-col gap-6" x-data="{ photo: { url: '', title: '' } }">
-    <x-page-header title="Absensi" description="Pantau kehadiran, ketepatan waktu, dan shift setiap cabang." />
+    <x-page-header title="Absensi" description="Pantau kehadiran, ketepatan waktu, dan shift setiap cabang.">
+        <flux:button variant="primary" icon="arrow-down-tray" :href="route('owner.attendance.export', array_filter(compact('from', 'to', 'outletFilter', 'userFilter', 'statusFilter')))">Ekspor rekap</flux:button>
+    </x-page-header>
 
     {{-- Filter --}}
     <section class="grid gap-3 rounded-xl border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-5">

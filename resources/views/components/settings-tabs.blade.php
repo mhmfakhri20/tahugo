@@ -6,6 +6,7 @@
         ['route' => 'owner.settings.items', 'label' => 'Bahan baku'],
         ['route' => 'owner.settings.products', 'label' => 'Produk & resep', 'active' => 'owner.settings.products*'],
         ['route' => 'owner.settings.expense-categories', 'label' => 'Kategori pengeluaran'],
+        ['route' => 'owner.settings.audit-log', 'label' => 'Audit log'],
     ];
 @endphp
 

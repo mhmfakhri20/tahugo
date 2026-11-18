@@ -34,6 +34,11 @@ class StockSeeder extends Seeder
 
     public function run(StockService $stock): void
     {
+        // Development data only: never in production (NFR-4).
+        if (app()->isProduction()) {
+            return;
+        }
+
         $owner = User::query()->where('username', 'owner')->first();
 
         if ($owner === null) {

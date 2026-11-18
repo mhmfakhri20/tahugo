@@ -192,6 +192,10 @@ new #[Title('Beranda')] class extends Component {
         </a>
     @endif
 
+    <a href="{{ route('help') }}" wire:navigate class="flex min-h-12 items-center justify-center gap-2 text-base font-medium text-muted">
+        <flux:icon name="question-mark-circle" class="size-5" /> Butuh bantuan? Lihat panduan
+    </a>
+
     {{-- Riwayat --}}
     <section class="flex flex-col gap-3">
         <h2 class="text-lg font-semibold">Riwayat kehadiran Anda</h2>

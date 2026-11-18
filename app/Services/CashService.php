@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AuditAction;
 use App\Enums\CashDirection;
 use App\Enums\ExpenseStatus;
 use App\Enums\FundSource;
@@ -353,13 +354,20 @@ class CashService
 
             Gate::forUser($owner)->authorize('verify', $locked);
 
-            // TODO(F7, AUD-1): record the verification (old/new status, reason, IP) in audit_logs.
             $locked->update([
                 'status' => $status,
                 'verified_by' => $owner->id,
                 'verified_at' => now(),
                 'reject_reason' => $reason !== null ? mb_substr($reason, 0, 500) : null,
             ]);
+
+            audit(
+                $status === ExpenseStatus::Approved ? AuditAction::ExpenseApprove : AuditAction::ExpenseReject,
+                $locked,
+                ['status' => ExpenseStatus::Pending, 'amount' => $locked->amount],
+                array_filter(['status' => $status, 'reject_reason' => $locked->reject_reason], fn ($v) => $v !== null),
+                $owner,
+            );
 
             return $locked;
         });

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AuditAction;
 use App\Enums\SalesChannel;
 use App\Models\Item;
 use App\Models\Product;
@@ -26,6 +27,9 @@ class ProductService
         $this->ensureValidRecipe($recipe);
 
         return DB::transaction(function () use ($product, $data, $prices, $recipe): Product {
+            $isNew = ! $product->exists;
+            $before = $isNew ? [] : $this->snapshot($product->load('prices', 'recipes.item'));
+
             $product->fill([
                 'name' => trim($data['name']),
                 'type' => $data['type'],
@@ -48,8 +52,31 @@ class ProductService
                 ]);
             }
 
-            return $product->load('prices', 'recipes.item');
+            $product->load('prices', 'recipes.item');
+
+            // AUD-1: price & recipe (BOM) changes.
+            [$old, $new] = app(AuditService::class)->diff($before, $this->snapshot($product));
+
+            if ($isNew || $new !== []) {
+                audit($isNew ? AuditAction::ProductCreate : AuditAction::ProductUpdate, $product, $isNew ? null : $old, $new);
+            }
+
+            return $product;
         });
+    }
+
+    /**
+     * @return array{name: string, type: string, is_active: bool, prices: array<string, int>, recipe: array<string, string>}
+     */
+    private function snapshot(Product $product): array
+    {
+        return [
+            'name' => $product->name,
+            'type' => $product->type instanceof \BackedEnum ? $product->type->value : (string) $product->type,
+            'is_active' => (bool) $product->is_active,
+            'prices' => $product->prices->mapWithKeys(fn ($p) => [$p->channel->label() => (int) $p->price])->sortKeys()->all(),
+            'recipe' => $product->recipes->mapWithKeys(fn ($r) => [$r->item->name => qty($r->qty)])->sortKeys()->all(),
+        ];
     }
 
     public function setActive(Product $product, bool $active): void

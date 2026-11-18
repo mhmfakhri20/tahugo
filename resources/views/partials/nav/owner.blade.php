@@ -24,3 +24,6 @@
 <flux:sidebar.item icon="cog-6-tooth" :href="route('owner.settings')" :current="request()->routeIs('owner.settings*')" wire:navigate>
     Pengaturan
 </flux:sidebar.item>
+<flux:sidebar.item icon="question-mark-circle" :href="route('help')" :current="request()->routeIs('help')" wire:navigate>
+    Bantuan
+</flux:sidebar.item>

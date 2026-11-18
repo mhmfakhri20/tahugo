@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnforceIdleTimeout;
 use App\Http\Middleware\EnsureOpenShift;
 use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Foundation\Application;
@@ -16,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             EnsureUserIsActive::class,
+            EnforceIdleTimeout::class,
         ]);
 
         $middleware->alias([

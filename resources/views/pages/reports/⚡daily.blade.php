@@ -31,6 +31,32 @@ new #[Title('Laporan harian outlet')] class extends Component {
         return app(ReportService::class)->daily($shift);
     }
 
+    public string $correctCash = '';
+
+    public string $correctReason = '';
+
+    /**
+     * SHF-5: owner corrects the counted cash of a closed shift (audited).
+     */
+    public function correct(\App\Services\ShiftService $shifts): void
+    {
+        $validated = $this->validate([
+            'correctCash' => ['required', 'integer', 'min:0', 'max:100000000'],
+            'correctReason' => ['required', 'string', 'min:3', 'max:500'],
+        ], [], ['correctCash' => 'kas fisik', 'correctReason' => 'alasan koreksi']);
+
+        try {
+            $shifts->correct(Shift::findOrFail($this->shiftId), auth()->user(), (int) $validated['correctCash'], $validated['correctReason']);
+        } catch (\App\Exceptions\BusinessRuleException $e) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['correctCash' => $e->getMessage()]);
+        }
+
+        \Flux\Flux::modal('correct-shift')->close();
+        $this->reset('correctCash', 'correctReason');
+        unset($this->report);
+        $this->dispatch('notify', message: 'Kas fisik shift dikoreksi dan tercatat di audit log.');
+    }
+
     public function backUrl(): string
     {
         return auth()->user()->isOwner() ? route('owner.reports.daily') : route('outlet.home');
@@ -52,8 +78,36 @@ new #[Title('Laporan harian outlet')] class extends Component {
         <a href="{{ $this->backUrl() }}" wire:navigate class="inline-flex min-h-12 items-center gap-1 text-base font-medium text-muted">
             <flux:icon name="arrow-left" class="size-5" /> Kembali
         </a>
-        <flux:button icon="printer" x-on:click="window.print()">Cetak laporan</flux:button>
+        <div class="flex flex-wrap gap-2">
+            @can('correct', $shift)
+                <flux:modal.trigger name="correct-shift">
+                    <flux:button icon="pencil-square">Koreksi kas fisik</flux:button>
+                </flux:modal.trigger>
+            @endcan
+            <flux:button icon="document-arrow-down" :href="route('reports.daily.pdf', $shift)">Unduh PDF</flux:button>
+            <flux:button icon="printer" x-on:click="window.print()">Cetak laporan</flux:button>
+        </div>
     </div>
+
+    @can('correct', $shift)
+        <flux:modal name="correct-shift" class="w-full max-w-md">
+            <form wire:submit="correct" class="flex flex-col gap-4">
+                <flux:heading size="lg">Koreksi kas fisik</flux:heading>
+                <p class="text-sm text-muted">
+                    Saat ini {{ rupiah($shift->counted_cash) }} (kas seharusnya {{ rupiah($shift->expected_cash) }}).
+                    Selisih dihitung ulang. Koreksi tercatat di audit log.
+                </p>
+                <flux:input wire:model="correctCash" type="number" min="0" label="Kas fisik yang benar *">
+                    <x-slot name="iconLeading"><span class="text-sm text-muted">Rp</span></x-slot>
+                </flux:input>
+                <flux:textarea wire:model="correctReason" label="Alasan koreksi *" rows="2" placeholder="Mis. salah hitung uang Rp10.000" />
+                <div class="flex justify-end gap-2">
+                    <flux:modal.close><flux:button>Batal</flux:button></flux:modal.close>
+                    <flux:button type="submit" variant="primary" icon="check">Simpan koreksi</flux:button>
+                </div>
+            </form>
+        </flux:modal>
+    @endcan
 
     <header class="print-card flex flex-col gap-2 rounded-xl border border-border bg-surface p-4 sm:p-6">
         <div class="flex flex-wrap items-start justify-between gap-3">

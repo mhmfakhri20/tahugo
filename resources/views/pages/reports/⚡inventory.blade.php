@@ -47,11 +47,16 @@ new #[Title('Laporan persediaan')] class extends Component {
 @php $r = $this->report; @endphp
 
 <div class="flex flex-col gap-6">
+    @php $exportUrl = route(auth()->user()->isOwner() ? 'owner.reports.inventory.export' : 'warehouse.reports.export', array_filter(compact('from', 'to', 'outlet'))); @endphp
     @if (auth()->user()->isOwner())
-        <x-page-header title="Laporan" :description="'Persediaan · '.$this->period->label()" />
+        <x-page-header title="Laporan" :description="'Persediaan · '.$this->period->label()">
+            <flux:button variant="primary" icon="arrow-down-tray" class="no-print" :href="$exportUrl">Ekspor Excel</flux:button>
+        </x-page-header>
         <x-report-tabs current="owner.reports.inventory" :query="['from' => $from, 'to' => $to, 'outlet' => $outlet]" />
     @else
-        <x-page-header title="Laporan persediaan" :description="$this->period->label()" />
+        <x-page-header title="Laporan persediaan" :description="$this->period->label()">
+            <flux:button variant="primary" icon="arrow-down-tray" class="no-print" :href="$exportUrl">Ekspor Excel</flux:button>
+        </x-page-header>
     @endif
     <x-report-filters :options="$this->locationOptions" label="Lokasi" all-label="Semua lokasi" />
 

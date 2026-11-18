@@ -5,7 +5,7 @@
         ['route' => 'outlet.cashier', 'active' => 'outlet.cashier*', 'icon' => 'shopping-cart', 'label' => 'Kasir'],
         ['route' => 'outlet.expenses', 'active' => 'outlet.expenses*', 'icon' => 'banknotes', 'label' => 'Pengeluaran'],
         ['route' => 'outlet.stock', 'active' => 'outlet.stock*', 'icon' => 'archive-box', 'label' => 'Stok'],
-        ['route' => 'profile.edit', 'active' => ['profile.edit', 'security.edit', 'appearance.edit'], 'icon' => 'user-circle', 'label' => 'Akun'],
+        ['route' => 'profile.edit', 'active' => ['profile.edit', 'security.edit', 'appearance.edit'], 'icon' => 'user-circle', 'label' => 'Profil'],
     ];
 @endphp
 <!DOCTYPE html>

@@ -65,7 +65,7 @@ test('outlet shell keeps the five-item bottom navigation', function () {
     $this->actingAs(User::factory()->outletStaff()->create())
         ->get(route('outlet.home'))
         ->assertOk()
-        ->assertSeeInOrder(['Beranda', 'Kasir', 'Pengeluaran', 'Stok', 'Akun'])
+        ->assertSeeInOrder(['Beranda', 'Kasir', 'Pengeluaran', 'Stok', 'Profil'])
         ->assertDontSee('Workspace /');
 });
 

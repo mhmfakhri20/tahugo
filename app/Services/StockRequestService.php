@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AuditAction;
 use App\Enums\MovementType;
 use App\Enums\RequestStatus;
 use App\Exceptions\InventoryException;
@@ -108,6 +109,12 @@ class StockRequestService
                 'approved_at' => now(),
             ]);
 
+            audit(AuditAction::StockRequestApprove, $request,
+                ['status' => RequestStatus::Pending, 'items' => $this->lineSummary($request, 'qty_requested')],
+                ['status' => RequestStatus::Approved, 'items' => $this->lineSummary($request, 'qty_approved')],
+                $user,
+            );
+
             return $request;
         });
     }
@@ -127,6 +134,12 @@ class StockRequestService
                 'rejected_at' => now(),
                 'reject_reason' => trim($reason),
             ]);
+
+            audit(AuditAction::StockRequestReject, $request,
+                ['status' => RequestStatus::Pending],
+                ['status' => RequestStatus::Rejected, 'reject_reason' => $request->reject_reason],
+                $user,
+            );
 
             return $request;
         });
@@ -201,6 +214,12 @@ class StockRequestService
                 'ship_note' => filled($note) ? trim($note) : null,
             ]);
 
+            audit(AuditAction::StockRequestShip, $request,
+                ['status' => RequestStatus::Approved, 'items' => $this->lineSummary($request, 'qty_approved')],
+                array_filter(['status' => RequestStatus::Shipped, 'items' => $this->lineSummary($request, 'qty_shipped'), 'note' => $request->ship_note]),
+                $user,
+            );
+
             return $request;
         });
     }
@@ -250,6 +269,12 @@ class StockRequestService
                 'receive_note' => filled($note) ? trim($note) : null,
             ]);
 
+            audit(AuditAction::StockRequestReceive, $request,
+                ['status' => RequestStatus::Shipped, 'items' => $this->lineSummary($request, 'qty_shipped')],
+                array_filter(['status' => RequestStatus::Received, 'items' => $this->lineSummary($request, 'qty_received'), 'note' => $request->receive_note]),
+                $user,
+            );
+
             return $request;
         });
     }
@@ -271,6 +296,18 @@ class StockRequestService
         $sequence = $last ? ((int) substr($last, strlen($prefix))) + 1 : 1;
 
         return $prefix.str_pad((string) $sequence, 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * "Tahu mentah" => "100" per line, for the audit log.
+     *
+     * @return array<string, string>
+     */
+    private function lineSummary(StockRequest $request, string $column): array
+    {
+        return $request->items
+            ->mapWithKeys(fn ($line) => [$line->item->name => qty($line->{$column})])
+            ->all();
     }
 
     /**

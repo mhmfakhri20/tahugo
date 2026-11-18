@@ -14,6 +14,11 @@ class DevUserSeeder extends Seeder
 {
     public function run(): void
     {
+        // Development data only: never in production (NFR-4).
+        if (app()->isProduction()) {
+            return;
+        }
+
         $outlets = Location::whereIn('code', ['FJI', 'BKK'])->pluck('id', 'code');
 
         $users = [

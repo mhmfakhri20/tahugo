@@ -14,3 +14,8 @@
 <flux:sidebar.item icon="document-chart-bar" :href="route('warehouse.reports')" :current="request()->routeIs('warehouse.reports*')" wire:navigate>
     Laporan Persediaan
 </flux:sidebar.item>
+
+<div class="px-2 pt-4 pb-1 text-xs font-semibold tracking-wide text-muted uppercase">Lainnya</div>
+<flux:sidebar.item icon="question-mark-circle" :href="route('help')" :current="request()->routeIs('help')" wire:navigate>
+    Bantuan
+</flux:sidebar.item>

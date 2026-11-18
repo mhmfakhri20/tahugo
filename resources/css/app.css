@@ -93,8 +93,13 @@
     }
 }
 
+/*
+ * Field = label, input, helper text stacked. `content-start` keeps them packed at the top when the
+ * field is stretched in a form grid next to a taller field (e.g. one with helper text), so labels
+ * and inputs in the same row stay aligned.
+ */
 [data-flux-field]:not(ui-radio, ui-checkbox) {
-    @apply grid gap-2;
+    @apply grid content-start gap-2;
 }
 
 [data-flux-label] {

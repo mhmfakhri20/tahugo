@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\AttendanceType;
+use App\Enums\AuditAction;
 use App\Enums\ShiftStatus;
 use App\Exceptions\ShiftException;
 use App\Models\Attendance;
@@ -129,6 +130,12 @@ class ShiftService
                     'closing_photo_path' => $path,
                 ]);
 
+                audit(AuditAction::ShiftClose, $locked,
+                    ['status' => ShiftStatus::Open],
+                    ['status' => ShiftStatus::Closed, 'counted_cash' => $countedCash, 'expected_cash' => $expected, 'variance' => $countedCash - $expected],
+                    $user,
+                );
+
                 return $locked;
             });
         } catch (\Throwable $e) {
@@ -136,6 +143,47 @@ class ShiftService
 
             throw $e;
         }
+    }
+
+    /**
+     * SHF-5 / BR-6: the OWNER corrects the counted cash of a closed shift (e.g. a counting
+     * mistake). The stored expected cash stays; the variance is recomputed. Always audited.
+     */
+    public function correct(Shift $shift, User $owner, int $countedCash, string $reason): Shift
+    {
+        Gate::forUser($owner)->authorize('correct', $shift);
+
+        $reason = trim($reason);
+
+        if (mb_strlen($reason) < 3) {
+            throw new ShiftException('Tulis alasan koreksi (minimal 3 huruf).');
+        }
+
+        if ($countedCash < 0) {
+            throw new ShiftException('Uang tunai fisik tidak boleh kurang dari Rp0.');
+        }
+
+        return DB::transaction(function () use ($shift, $owner, $countedCash, $reason): Shift {
+            $locked = Shift::query()->whereKey($shift->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->isOpen()) {
+                throw new ShiftException('Shift yang masih buka tidak perlu dikoreksi.');
+            }
+
+            $old = ['counted_cash' => $locked->counted_cash, 'variance' => $locked->variance];
+
+            $locked->update([
+                'counted_cash' => $countedCash,
+                'variance' => $countedCash - (int) $locked->expected_cash,
+            ]);
+
+            audit(AuditAction::ShiftCorrect, $locked, $old,
+                ['counted_cash' => $locked->counted_cash, 'variance' => $locked->variance, 'reason' => $reason],
+                $owner,
+            );
+
+            return $locked;
+        });
     }
 
     /**

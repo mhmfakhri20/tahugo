@@ -38,7 +38,10 @@ new #[Title('Laporan kas & laba-rugi')] class extends Component {
 @endphp
 
 <div class="flex flex-col gap-6">
-    <x-page-header title="Laporan" :description="'Kas & laba-rugi · '.$this->period->label()" />
+    <x-page-header title="Laporan" :description="'Kas & laba-rugi · '.$this->period->label()">
+        <flux:button icon="document-arrow-down" class="no-print" :href="route('owner.reports.cash.pdf', array_filter(compact('from', 'to', 'outlet')))">Unduh PDF</flux:button>
+        <flux:button variant="primary" icon="arrow-down-tray" class="no-print" :href="route('owner.reports.cash.export', array_filter(compact('from', 'to', 'outlet')))">Ekspor Excel</flux:button>
+    </x-page-header>
     <x-report-tabs current="owner.reports.cash" :query="['from' => $from, 'to' => $to, 'outlet' => $outlet]" />
     <x-report-filters :options="$this->outletOptions" />
 

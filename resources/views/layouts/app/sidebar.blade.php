@@ -46,7 +46,9 @@
             <div class="px-3 text-xs text-muted">Tahu Go Business &middot; v1.0</div>
         </flux:sidebar>
 
-        <flux:header class="min-h-16 border-b border-border bg-surface">
+        {{-- Header tetap di atas saat konten digulir (pemilik & admin gudang). --}}
+        {{-- z-10: di atas konten, di bawah laci sidebar mobile (z-20). --}}
+        <flux:header sticky class="z-10 min-h-16 border-b border-border bg-surface">
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" aria-label="Buka menu" />
 
             <x-app-logo :href="route('dashboard')" wire:navigate class="ms-2 lg:hidden" />

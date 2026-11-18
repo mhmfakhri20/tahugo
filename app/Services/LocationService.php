@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\AuditAction;
 use App\Enums\LocationType;
 use App\Models\Location;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -12,6 +14,12 @@ use Illuminate\Validation\ValidationException;
  */
 class LocationService
 {
+    /** Fields recorded in the audit log (AUD-1: data outlet). */
+    private const AUDITED = [
+        'code', 'name', 'type', 'address', 'latitude', 'longitude', 'attendance_radius_m',
+        'open_time', 'close_time', 'monthly_target', 'is_active',
+    ];
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -27,6 +35,8 @@ class LocationService
         }
 
         $isOutlet = $type === LocationType::Outlet;
+        $isNew = ! $location->exists;
+        $before = $isNew ? [] : $location->only(self::AUDITED);
 
         $location->fill([
             'code' => Str::upper(trim($data['code'])),
@@ -40,9 +50,19 @@ class LocationService
             'close_time' => $isOutlet ? ($data['close_time'] ?? null) : null,
             'monthly_target' => $isOutlet && filled($data['monthly_target'] ?? null) ? (int) $data['monthly_target'] : null,
             'is_active' => $isActive,
-        ])->save();
+        ]);
 
-        return $location;
+        return DB::transaction(function () use ($location, $isNew, $before): Location {
+            $location->save();
+
+            [$old, $new] = app(AuditService::class)->diff($before, $location->only(self::AUDITED));
+
+            if ($isNew || $new !== []) {
+                audit($isNew ? AuditAction::LocationCreate : AuditAction::LocationUpdate, $location, $isNew ? null : $old, $new);
+            }
+
+            return $location;
+        });
     }
 
     public function setActive(Location $location, bool $active): void
@@ -51,7 +71,12 @@ class LocationService
             $this->ensureNoActiveStaff($location, 'is_active');
         }
 
-        $location->update(['is_active' => $active]);
+        DB::transaction(function () use ($location, $active): void {
+            $old = (bool) $location->is_active;
+            $location->update(['is_active' => $active]);
+
+            audit($active ? AuditAction::LocationActivate : AuditAction::LocationDeactivate, $location, ['is_active' => $old], ['is_active' => $active]);
+        });
     }
 
     private function ensureNoActiveStaff(Location $location, string $field): void

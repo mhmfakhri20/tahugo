@@ -3,6 +3,7 @@
 use App\Http\Controllers\AttendancePhotoController;
 use App\Http\Controllers\CashReceiptController;
 use App\Http\Controllers\PurchaseReceiptController;
+use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\ShiftPhotoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +22,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('shifts/{shift}/photo', ShiftPhotoController::class)->name('shifts.photo');
     // Laporan Harian Outlet (REP-2): pemilik & penjaga outlet tersebut.
     Route::livewire('reports/daily/{shift}', 'pages::reports.daily')->name('reports.daily');
+    Route::get('reports/daily/{shift}/pdf', [ReportExportController::class, 'dailyPdf'])->name('reports.daily.pdf');
+    // Bantuan (NFR-8): isi sesuai peran.
+    Route::livewire('help', 'pages::help')->name('help');
     // Foto nota pengeluaran: pemilik & pencatatnya (CASH-1, CASH-4).
     Route::get('cash-entries/{cashEntry}/receipt', CashReceiptController::class)->name('cash-entries.receipt');
 
@@ -45,7 +49,14 @@ Route::middleware(['auth'])->group(function () {
             Route::livewire('inventory', 'pages::reports.inventory')->name('inventory');
             Route::livewire('performance', 'pages::reports.performance')->name('performance');
             Route::livewire('daily', 'pages::reports.daily-list')->name('daily');
+            // Ekspor (REP-7): filter & Gate sama dengan halamannya.
+            Route::get('sales/export', [ReportExportController::class, 'sales'])->name('sales.export');
+            Route::get('cash/export', [ReportExportController::class, 'cash'])->name('cash.export');
+            Route::get('cash/pdf', [ReportExportController::class, 'cashPdf'])->name('cash.pdf');
+            Route::get('inventory/export', [ReportExportController::class, 'inventory'])->name('inventory.export');
+            Route::get('performance/export', [ReportExportController::class, 'performance'])->name('performance.export');
         });
+        Route::get('attendance/export', [ReportExportController::class, 'attendance'])->name('attendance.export');
         Route::livewire('attendance', 'pages::owner.attendance')->name('attendance');
         // Pengaturan: master data & user management (F1).
         Route::get('settings', fn () => redirect()->route('owner.settings.users'))->name('settings');
@@ -57,6 +68,8 @@ Route::middleware(['auth'])->group(function () {
             Route::livewire('products/create', 'pages::owner.settings.product-edit')->name('products.create');
             Route::livewire('products/{product}', 'pages::owner.settings.product-edit')->name('products.edit');
             Route::livewire('expense-categories', 'pages::owner.settings.expense-categories')->name('expense-categories');
+            // Audit log (AUD-2): hanya baca, tidak ada route ubah/hapus.
+            Route::livewire('audit-log', 'pages::owner.settings.audit-log')->name('audit-log');
         });
         Route::get('{path}', fn () => abort(404))->where('path', '.*')->name('fallback');
     });
@@ -96,6 +109,7 @@ Route::middleware(['auth'])->group(function () {
         Route::livewire('business-expenses', 'pages::business-expenses')->name('business-expenses');
         Route::livewire('requests/{stockRequest}', 'pages::stock-requests.show')->name('requests.show');
         Route::livewire('reports', 'pages::reports.inventory')->name('reports');
+        Route::get('reports/export', [ReportExportController::class, 'inventory'])->name('reports.export');
         Route::get('{path}', fn () => abort(404))->where('path', '.*')->name('fallback');
     });
 });

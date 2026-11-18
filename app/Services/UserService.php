@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AuditAction;
 use App\Enums\Role;
 use App\Models\Location;
 use App\Models\User;
@@ -14,6 +15,9 @@ use Illuminate\Validation\ValidationException;
  */
 class UserService
 {
+    /** Fields recorded in the audit log (no password / tokens). */
+    private const AUDITED = ['name', 'username', 'phone', 'role', 'location_id', 'is_active'];
+
     /**
      * @param  array{name: string, username: string, phone?: ?string, role: Role|string, location_id?: ?int, password: string}  $data
      */
@@ -21,10 +25,17 @@ class UserService
     {
         $attributes = $this->normalize($data);
 
-        return User::create($attributes + [
-            'password' => $data['password'],
-            'is_active' => true,
-        ]);
+        return DB::transaction(function () use ($attributes, $data): User {
+            $user = User::create($attributes + [
+                'password' => $data['password'],
+                'is_active' => true,
+            ]);
+
+            // The password is never written to the audit log (AuditService drops it anyway).
+            audit(AuditAction::UserCreate, $user, null, $user->only(self::AUDITED));
+
+            return $user;
+        });
     }
 
     /**
@@ -40,9 +51,18 @@ class UserService
             ]);
         }
 
-        $user->update($attributes);
+        return DB::transaction(function () use ($actor, $user, $attributes): User {
+            $before = $user->only(self::AUDITED);
+            $user->update($attributes);
 
-        return $user;
+            [$old, $new] = app(AuditService::class)->diff($before, $user->only(self::AUDITED));
+
+            if ($new !== []) {
+                audit(AuditAction::UserUpdate, $user, $old, $new, $actor);
+            }
+
+            return $user;
+        });
     }
 
     public function setActive(User $actor, User $user, bool $active): void
@@ -57,7 +77,12 @@ class UserService
             $this->ensureActiveOutlet($user->location_id);
         }
 
-        $user->update(['is_active' => $active]);
+        DB::transaction(function () use ($actor, $user, $active): void {
+            $old = (bool) $user->is_active;
+            $user->update(['is_active' => $active]);
+
+            audit($active ? AuditAction::UserActivate : AuditAction::UserDeactivate, $user, ['is_active' => $old], ['is_active' => $active], $actor);
+        });
     }
 
     /**
@@ -72,6 +97,9 @@ class UserService
             ])->save();
 
             DB::table('sessions')->where('user_id', $user->id)->delete();
+
+            // Only the fact that it changed — never the password itself.
+            audit(AuditAction::UserPasswordReset, $user, null, ['password_changed' => true]);
         });
     }
 

@@ -26,7 +26,9 @@ new #[Title('Kinerja outlet')] class extends Component {
 }; ?>
 
 <div class="flex flex-col gap-6">
-    <x-page-header title="Laporan" :description="'Kinerja outlet · '.$this->period->label().' dibanding '.$this->period->previous()->label()" />
+    <x-page-header title="Laporan" :description="'Kinerja outlet · '.$this->period->label().' dibanding '.$this->period->previous()->label()">
+        <flux:button variant="primary" icon="arrow-down-tray" class="no-print" :href="route('owner.reports.performance.export', array_filter(compact('from', 'to')))">Ekspor Excel</flux:button>
+    </x-page-header>
     <x-report-tabs current="owner.reports.performance" :query="['from' => $from, 'to' => $to]" />
     <x-report-filters />
 

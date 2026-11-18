@@ -41,6 +41,14 @@ class ShiftPolicy
     }
 
     /**
+     * SHF-5: only the owner corrects a closed shift (audited).
+     */
+    public function correct(User $user, Shift $shift): bool
+    {
+        return $user->isOwner() && ! $shift->isOpen();
+    }
+
+    /**
      * Daily outlet report (REP-2): the owner, or staff of that outlet (BR-7).
      */
     public function viewReport(User $user, Shift $shift): bool

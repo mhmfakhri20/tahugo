@@ -550,6 +550,42 @@ class ReportService
         ];
     }
 
+    // ─── Attendance recap (ATT-7 export) ─────────────────────────────────────
+
+    /**
+     * One row per person per day: clock-in + the same day's clock-out.
+     *
+     * @return Collection<int, array{in: Attendance, out: Attendance|null}>
+     */
+    public function attendanceRecap(Period $period, ?int $locationId = null, ?int $userId = null, ?string $status = null): Collection
+    {
+        $ins = Attendance::query()
+            ->with(['user', 'location'])
+            ->where('type', AttendanceType::ClockIn)
+            ->whereBetween('server_time', $period->bounds())
+            ->when($locationId, fn ($q) => $q->where('location_id', $locationId))
+            ->when($userId, fn ($q) => $q->where('user_id', $userId))
+            ->orderBy('server_time')
+            ->get();
+
+        $outs = Attendance::query()
+            ->where('type', AttendanceType::ClockOut)
+            ->whereIn('user_id', $ins->pluck('user_id')->unique())
+            ->whereBetween('server_time', $period->bounds())
+            ->get()
+            ->keyBy(fn (Attendance $a) => $a->user_id.'|'.$a->server_time->toDateString());
+
+        return $ins
+            ->map(fn (Attendance $in) => ['in' => $in, 'out' => $outs->get($in->user_id.'|'.$in->server_time->toDateString())])
+            ->filter(fn (array $row) => match ($status) {
+                'late' => $row['in']->isLate(),
+                'early_leave' => (bool) $row['out']?->isEarlyLeave(),
+                'no_clock_out' => $row['out'] === null,
+                default => true,
+            })
+            ->values();
+    }
+
     // ─── Helpers ────────────────────────────────────────────────────────────
 
     /**

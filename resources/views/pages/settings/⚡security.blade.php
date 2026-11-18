@@ -40,48 +40,60 @@ new #[Title('Ganti password')] class extends Component {
     }
 }; ?>
 
-<section class="w-full">
-    @include('partials.settings-heading')
+{{-- Satu elemen root (syarat Livewire); tampilan dibedakan per peran di dalamnya. --}}
+<div>
+    @php $rules = \Illuminate\Validation\Rules\Password::defaults()->toPasswordRulesString(); @endphp
 
-    <flux:heading level="2" class="sr-only">{{ __('Security settings') }}</flux:heading>
-
-    <x-pages::settings.layout :heading="__('Update password')" :subheading="__('Ensure your account is using a long, random password to stay secure')">
-        <form method="POST" wire:submit="updatePassword" class="mt-6 space-y-6">
-            <flux:input
-                wire:model="current_password"
-                :label="__('Current password')"
-                type="password"
-                required
-                autocomplete="current-password"
-                viewable
-            />
-            <flux:input
-                wire:model="password"
-                :label="__('New password')"
-                type="password"
-                required
-                autocomplete="new-password"
-                passwordrules="{{ \Illuminate\Validation\Rules\Password::defaults()->toPasswordRulesString() }}"
-                viewable
-            />
-            <flux:input
-                wire:model="password_confirmation"
-                :label="__('Confirm password')"
-                type="password"
-                required
-                autocomplete="new-password"
-                passwordrules="{{ \Illuminate\Validation\Rules\Password::defaults()->toPasswordRulesString() }}"
-                viewable
-            />
-
-            <div class="flex items-center gap-4">
-                <flux:button variant="primary" type="submit" data-test="update-password-button">
-                    {{ __('Save') }}
-                </flux:button>
+    @if (auth()->user()->isOutletStaff())
+        {{-- Penjaga outlet: dibuka dari menu Profil. --}}
+        <section class="flex flex-col gap-5">
+            <div>
+                <a href="{{ route('profile.edit') }}" wire:navigate class="inline-flex min-h-12 items-center gap-1 text-base font-medium text-muted">
+                    <flux:icon name="arrow-left" class="size-5" /> Profil
+                </a>
+                <h1 class="text-[26px] leading-tight font-bold">Ubah password</h1>
+                <p class="text-base text-muted">Gunakan password yang panjang dan tidak mudah ditebak.</p>
             </div>
-        </form>
 
+            <form method="POST" wire:submit="updatePassword" class="flex flex-col gap-5 rounded-xl border border-border bg-surface p-4">
+                <flux:input wire:model="current_password" label="Password sekarang *" type="password" required autocomplete="current-password" viewable />
+                <flux:input wire:model="password" label="Password baru *" type="password" required autocomplete="new-password" :passwordrules="$rules" viewable />
+                <flux:input wire:model="password_confirmation" label="Ulangi password baru *" type="password" required autocomplete="new-password" :passwordrules="$rules" viewable />
+                <flux:button variant="primary" type="submit" icon="check" class="h-12 w-full text-base" data-test="update-password-button">
+                    Simpan password
+                </flux:button>
+            </form>
+        </section>
+    @else
+        {{-- Pemilik & admin gudang. --}}
+        <x-pages::settings.layout>
+            <section class="flex max-w-3xl flex-col gap-5 rounded-xl border border-border bg-surface p-4 sm:p-6">
+                <div class="flex items-start gap-3">
+                    <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-soft">
+                        <flux:icon name="key" class="size-5 text-brown" />
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold text-text">Ubah password</h2>
+                        <p class="text-sm text-muted">Gunakan password yang panjang dan tidak mudah ditebak. Setelah diganti, gunakan password baru saat masuk.</p>
+                    </div>
+                </div>
 
-    </x-pages::settings.layout>
+                <form method="POST" wire:submit="updatePassword" class="flex flex-col gap-5">
+                    <div class="grid gap-5 sm:grid-cols-2">
+                        <flux:input wire:model="current_password" label="Password sekarang *" type="password" required autocomplete="current-password" viewable />
+                    </div>
+                    <div class="grid gap-5 sm:grid-cols-2">
+                        <flux:input wire:model="password" label="Password baru *" type="password" required autocomplete="new-password" :passwordrules="$rules" viewable />
+                        <flux:input wire:model="password_confirmation" label="Ulangi password baru *" type="password" required autocomplete="new-password" :passwordrules="$rules" viewable />
+                    </div>
 
-</section>
+                    <div class="flex justify-end">
+                        <flux:button variant="primary" type="submit" icon="check" data-test="update-password-button">
+                            Simpan password
+                        </flux:button>
+                    </div>
+                </form>
+            </section>
+        </x-pages::settings.layout>
+    @endif
+</div>

@@ -20,6 +20,11 @@ class CashEntrySeeder extends Seeder
 {
     public function run(CashService $cash): void
     {
+        // Development data only: never in production (NFR-4).
+        if (app()->isProduction()) {
+            return;
+        }
+
         $owner = User::query()->where('username', 'owner')->first();
 
         if ($owner === null) {
