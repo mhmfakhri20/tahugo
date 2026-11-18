@@ -23,12 +23,12 @@ class StockSeeder extends Seeder
      * @var array<string, array{0: int, 1: int, 2: int, 3: int}>
      */
     private const PLACEHOLDER = [
-        'Tahu mentah' => [2000, 150, 500, 100],
-        'Bumbu tabur' => [5000, 400, 1000, 250],
-        'Saus' => [600, 30, 100, 40],
+        'Tahu mentah' => [2000, 500, 500, 100],
+        'Bumbu tabur' => [5000, 3000, 1000, 250],
+        'Saus' => [600, 80, 100, 40],
         'Minyak goreng' => [40, 4, 10, 2],
         'Kemasan kecil' => [1000, 80, 200, 50],
-        'Kemasan besar' => [800, 20, 200, 30],
+        'Kemasan besar' => [800, 60, 200, 30],
         'Plastik' => [1500, 120, 300, 50],
     ];
 

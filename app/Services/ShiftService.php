@@ -21,7 +21,10 @@ class ShiftService
 {
     public const PHOTO_DISK = 'local';
 
-    public function __construct(private readonly AttendanceService $attendance) {}
+    public function __construct(
+        private readonly AttendanceService $attendance,
+        private readonly SaleService $sales,
+    ) {}
 
     /**
      * The open shift of an outlet (at most one, SHF-1).
@@ -146,10 +149,9 @@ class ShiftService
      */
     public function expectedCash(Shift $shift): int
     {
-        $expected = $shift->opening_cash;
+        $expected = $shift->opening_cash
+            + $this->sales->cashSalesTotal($shift); // completed offline cash sales (void excluded)
 
-        // TODO(F4, POS): + Σ sales.total WHERE shift_id = shift AND channel = offline
-        //                  AND payment_method = cash AND status = completed.
         // TODO(F5, CASH): + Σ cash_entries.amount WHERE shift_id = shift AND direction = in
         //                 − Σ cash_entries.amount WHERE shift_id = shift AND direction = out
         //                   AND fund_source = outlet_cash AND status <> rejected.

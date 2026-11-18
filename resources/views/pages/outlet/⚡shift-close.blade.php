@@ -2,6 +2,7 @@
 
 use App\Livewire\Concerns\HandlesInventoryErrors;
 use App\Models\Shift;
+use App\Services\SaleService;
 use App\Services\ShiftService;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -51,6 +52,15 @@ new #[Title('Tutup shift')] class extends Component {
         return $this->shift ? app(ShiftService::class)->expectedCash($this->shift) : 0;
     }
 
+    /**
+     * Sales of this shift: count, per channel, cash vs QRIS, item usage (SHF-3/4).
+     */
+    #[Computed]
+    public function summary(): ?array
+    {
+        return $this->shift ? app(SaleService::class)->shiftSummary($this->shift) : null;
+    }
+
     #[Computed]
     public function variance(): ?int
     {
@@ -97,6 +107,55 @@ new #[Title('Tutup shift')] class extends Component {
             <p class="text-base text-muted">Dibuka {{ $shift->opener->name }}, {{ $shift->opened_at->translatedFormat('d M Y, H.i') }}.</p>
         </div>
 
+        @php $summary = $this->summary; @endphp
+        <section class="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4">
+            <h2 class="text-lg font-semibold">Penjualan shift ini</h2>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="rounded-xl bg-canvas p-4">
+                    <div class="text-sm text-muted">Transaksi</div>
+                    <div class="text-lg font-semibold">{{ $summary['count'] }}</div>
+                    @if ($summary['void_count'])
+                        <div class="text-sm text-muted">{{ $summary['void_count'] }} dibatalkan</div>
+                    @endif
+                </div>
+                <div class="rounded-xl bg-canvas p-4">
+                    <div class="text-sm text-muted">Omzet</div>
+                    <div class="text-lg font-semibold">{{ rupiah($summary['total']) }}</div>
+                </div>
+            </div>
+
+            <dl class="flex flex-col divide-y divide-border text-base">
+                @foreach (\App\Enums\SalesChannel::cases() as $channel)
+                    <div class="flex justify-between gap-3 py-2">
+                        <dt class="text-muted">{{ $channel->label() }}</dt>
+                        <dd class="font-medium">{{ rupiah($summary['per_channel'][$channel->value]) }}</dd>
+                    </div>
+                @endforeach
+                <div class="flex justify-between gap-3 py-2">
+                    <dt class="text-muted">Offline tunai (masuk laci)</dt>
+                    <dd class="font-semibold">{{ rupiah($summary['cash']) }}</dd>
+                </div>
+                <div class="flex justify-between gap-3 py-2">
+                    <dt class="text-muted">Offline QRIS</dt>
+                    <dd class="font-medium">{{ rupiah($summary['qris']) }}</dd>
+                </div>
+            </dl>
+
+            @if ($summary['usage']->isNotEmpty())
+                <div>
+                    <h3 class="mb-1 font-semibold">Bahan terpakai</h3>
+                    <ul class="flex flex-col divide-y divide-border text-base">
+                        @foreach ($summary['usage'] as $row)
+                            <li class="flex justify-between gap-3 py-2">
+                                <span>{{ $row['item']->name }}</span>
+                                <span class="font-medium">{{ qty($row['qty']) }} {{ $row['item']->unit }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+        </section>
+
         <section class="flex flex-col gap-5 rounded-xl border border-border bg-surface p-4">
             <dl class="grid grid-cols-2 gap-3">
                 <div class="rounded-xl bg-canvas p-4">
@@ -104,7 +163,7 @@ new #[Title('Tutup shift')] class extends Component {
                     <dd class="text-lg font-semibold">{{ rupiah($shift->opening_cash) }}</dd>
                 </div>
                 <div class="rounded-xl bg-canvas p-4">
-                    <dt class="text-sm text-muted">Kas seharusnya</dt>
+                    <dt class="text-sm text-muted">Kas seharusnya <span class="block text-xs">kas awal + penjualan tunai</span></dt>
                     <dd class="text-lg font-semibold">{{ rupiah($this->expectedCash) }}</dd>
                 </div>
             </dl>

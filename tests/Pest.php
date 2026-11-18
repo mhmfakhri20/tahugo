@@ -1,10 +1,18 @@
 <?php
 
+use App\Enums\MovementType;
+use App\Enums\PaymentMethod;
+use App\Enums\ProductType;
+use App\Enums\SalesChannel;
 use App\Models\Attendance;
 use App\Models\Item;
 use App\Models\Location;
+use App\Models\Product;
+use App\Models\Sale;
+use App\Models\Shift;
 use App\Models\User;
 use App\Services\AttendanceService;
+use App\Services\SaleService;
 use App\Services\StockService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -126,5 +134,87 @@ function clockIn(User $user, ?float $lat = null, ?float $lng = null, float $accu
 {
     return app(AttendanceService::class)->clockIn(
         $user, selfie(), $lat ?? (float) $user->location->latitude, $lng ?? (float) $user->location->longitude, $accuracy,
+    );
+}
+
+/**
+ * POS test fixture (F4): outlets A & B with an open shift at A (opening cash Rp100.000),
+ * "Paket isi 10" (BOM 10 tahu + 1 bumbu + 1 kemasan) and "Tahu satuan" (1 tahu) with prices per channel,
+ * and outlet stock tahu 100 / bumbu 20 / kemasan 20 at both outlets.
+ *
+ * @return object{outletA: Location, outletB: Location, owner: User, staffA: User, staffA2: User, staffB: User, shiftA: Shift, tahu: Item, bumbu: Item, kemasan: Item, paket: Product, satuan: Product}
+ */
+function posWorld(): object
+{
+    atWib('09:00');
+
+    $outletA = Location::factory()->outlet()->create(['code' => 'FJI', 'name' => 'Outlet A']);
+    $outletB = Location::factory()->outlet()->create(['code' => 'BKK', 'name' => 'Outlet B']);
+    $owner = User::factory()->owner()->create();
+    $staffA = User::factory()->outletStaff($outletA)->create();
+
+    $tahu = Item::factory()->create(['name' => 'Tahu mentah', 'unit' => 'pcs']);
+    $bumbu = Item::factory()->create(['name' => 'Bumbu tabur', 'unit' => 'pcs']);
+    $kemasan = Item::factory()->create(['name' => 'Kemasan besar', 'unit' => 'pcs']);
+
+    $paket = makeProduct('Paket isi 10', ['offline' => 18_000, 'gofood' => 22_000, 'grabfood' => 21_000, 'shopeefood' => 20_000],
+        [[$tahu, 10], [$bumbu, 1], [$kemasan, 1]], ProductType::Paket);
+    $satuan = makeProduct('Tahu satuan', ['offline' => 2_000, 'gofood' => 2_500, 'grabfood' => 2_500, 'shopeefood' => 2_500],
+        [[$tahu, 1]]);
+
+    foreach ([$outletA, $outletB] as $outlet) {
+        app(StockService::class)->moveMany([
+            ['location' => $outlet, 'item' => $tahu, 'qty' => 100],
+            ['location' => $outlet, 'item' => $bumbu, 'qty' => 20],
+            ['location' => $outlet, 'item' => $kemasan, 'qty' => 20],
+        ], MovementType::Adjustment, $owner);
+    }
+
+    return (object) [
+        'outletA' => $outletA,
+        'outletB' => $outletB,
+        'owner' => $owner,
+        'staffA' => $staffA,
+        'staffA2' => User::factory()->outletStaff($outletA)->create(),
+        'staffB' => User::factory()->outletStaff($outletB)->create(),
+        'shiftA' => Shift::factory()->atOutlet($outletA, $staffA)->create(['opening_cash' => 100_000]),
+        'tahu' => $tahu,
+        'bumbu' => $bumbu,
+        'kemasan' => $kemasan,
+        'paket' => $paket,
+        'satuan' => $satuan,
+    ];
+}
+
+/**
+ * @param  array<string, int>  $prices  channel => price
+ * @param  list<array{0: Item, 1: int|float}>  $recipe
+ */
+function makeProduct(string $name, array $prices, array $recipe, ProductType $type = ProductType::Single): Product
+{
+    $product = Product::factory()->create(['name' => $name, 'type' => $type]);
+
+    foreach ($prices as $channel => $price) {
+        $product->prices()->create(['channel' => $channel, 'price' => $price]);
+    }
+
+    foreach ($recipe as [$item, $qty]) {
+        $product->recipes()->create(['item_id' => $item->id, 'qty' => $qty]);
+    }
+
+    return $product;
+}
+
+/**
+ * Sell through the service. $lines: [[Product, qty], ...]
+ */
+function sell(User $user, array $lines, SalesChannel $channel = SalesChannel::Offline, ?PaymentMethod $method = PaymentMethod::Cash, ?int $cash = 1_000_000): Sale
+{
+    return app(SaleService::class)->checkout(
+        $user,
+        $channel,
+        array_map(fn (array $line) => ['product_id' => $line[0]->id, 'qty' => $line[1]], $lines),
+        $method,
+        $cash,
     );
 }

@@ -54,9 +54,10 @@ Route::middleware(['auth'])->group(function () {
         Route::livewire('attendance', 'pages::outlet.attendance')->name('attendance');
         Route::livewire('shift/open', 'pages::outlet.shift-open')->name('shift.open');
         Route::livewire('shift/close', 'pages::outlet.shift-close')->name('shift.close');
-        // Kasir & Pengeluaran hanya saat shift terbuka (BR-4). Halamannya dibuat di F4/F5.
+        // Kasir & Pengeluaran hanya saat shift terbuka (BR-4). Pengeluaran dibuat di F5.
         Route::middleware('open-shift')->group(function () {
-            Route::view('cashier', 'pages.coming-soon', ['title' => 'Kasir'])->name('cashier');
+            Route::livewire('cashier', 'pages::outlet.cashier')->name('cashier');
+            Route::livewire('sales', 'pages::outlet.sales')->name('sales');
             Route::view('expenses', 'pages.coming-soon', ['title' => 'Pengeluaran'])->name('expenses');
         });
         Route::livewire('stock', 'pages::outlet.stock')->name('stock');
