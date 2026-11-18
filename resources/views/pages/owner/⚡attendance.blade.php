@@ -268,6 +268,7 @@ new #[Title('Absensi')] class extends Component {
                         <th>Kas seharusnya</th>
                         <th>Kas fisik</th>
                         <th>Selisih</th>
+                        <th>Setelah verifikasi</th>
                         <th class="text-end!">Foto</th>
                     </x-slot:head>
 
@@ -307,6 +308,19 @@ new #[Title('Absensi')] class extends Component {
                                     <x-status-badge variant="danger">Kurang {{ rupiah(abs($shift->variance)) }}</x-status-badge>
                                 @else
                                     <x-status-badge variant="warning">Lebih {{ rupiah($shift->variance) }}</x-status-badge>
+                                @endif
+                            </td>
+                            {{-- Pengeluaran yang ditolak setelah tutup shift menambah kekurangan (CASH-5). --}}
+                            <td class="whitespace-nowrap">
+                                @php $after = $shift->isOpen() || $shift->counted_cash === null ? null : $shift->counted_cash - app(\App\Services\ShiftService::class)->expectedCash($shift); @endphp
+                                @if ($after === null)
+                                    <span class="text-muted">—</span>
+                                @elseif ($after === $shift->variance)
+                                    <span class="text-sm text-muted">Sama</span>
+                                @elseif ($after < 0)
+                                    <x-status-badge variant="danger">Kurang {{ rupiah(abs($after)) }}</x-status-badge>
+                                @else
+                                    <x-status-badge variant="warning">{{ $after === 0 ? 'Pas' : 'Lebih '.rupiah($after) }}</x-status-badge>
                                 @endif
                             </td>
                             <td class="text-end">

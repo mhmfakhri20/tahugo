@@ -23,4 +23,16 @@ enum ExpenseStatus: string
             self::Rejected => 'Ditolak',
         };
     }
+
+    /**
+     * Variant for <x-status-badge> (design system: Menunggu=muted).
+     */
+    public function badge(): string
+    {
+        return match ($this) {
+            self::Pending => 'muted',
+            self::Approved => 'success',
+            self::Rejected => 'danger',
+        };
+    }
 }

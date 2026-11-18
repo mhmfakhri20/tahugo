@@ -7,6 +7,7 @@
     'field',
     'facing' => 'user',
     'label' => 'Foto',
+    'required' => true,
 ])
 
 <div
@@ -14,7 +15,7 @@
     x-data="cameraCapture({ field: @js($field), facing: @js($facing) })"
     {{ $attributes->class('flex flex-col gap-3') }}
 >
-    <div class="font-medium text-text">{{ $label }} <span class="text-danger">*</span></div>
+    <div class="font-medium text-text">{{ $label }} @if ($required)<span class="text-danger">*</span>@endif</div>
 
     <div class="relative aspect-[3/4] w-full overflow-hidden rounded-xl border border-border bg-canvas sm:aspect-video">
         {{-- Kamera langsung --}}

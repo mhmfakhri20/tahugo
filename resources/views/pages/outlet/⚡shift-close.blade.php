@@ -53,6 +53,15 @@ new #[Title('Tutup shift')] class extends Component {
     }
 
     /**
+     * Cash breakdown: income, expenses per status, staff advances (§6.3, CASH-5).
+     */
+    #[Computed]
+    public function cash(): ?array
+    {
+        return $this->shift ? app(ShiftService::class)->cashSummary($this->shift) : null;
+    }
+
+    /**
      * Sales of this shift: count, per channel, cash vs QRIS, item usage (SHF-3/4).
      */
     #[Computed]
@@ -156,17 +165,48 @@ new #[Title('Tutup shift')] class extends Component {
             @endif
         </section>
 
+        @php $cash = $this->cash; @endphp
         <section class="flex flex-col gap-5 rounded-xl border border-border bg-surface p-4">
-            <dl class="grid grid-cols-2 gap-3">
-                <div class="rounded-xl bg-canvas p-4">
-                    <dt class="text-sm text-muted">Kas awal</dt>
-                    <dd class="text-lg font-semibold">{{ rupiah($shift->opening_cash) }}</dd>
+            <h2 class="text-lg font-semibold">Uang di laci</h2>
+            <dl class="flex flex-col divide-y divide-border text-base">
+                <div class="flex justify-between gap-3 py-2">
+                    <dt class="text-muted">Kas awal</dt>
+                    <dd class="font-medium">{{ rupiah($cash['opening_cash']) }}</dd>
                 </div>
-                <div class="rounded-xl bg-canvas p-4">
-                    <dt class="text-sm text-muted">Kas seharusnya <span class="block text-xs">kas awal + penjualan tunai</span></dt>
-                    <dd class="text-lg font-semibold">{{ rupiah($this->expectedCash) }}</dd>
+                <div class="flex justify-between gap-3 py-2">
+                    <dt class="text-muted">+ Penjualan tunai</dt>
+                    <dd class="font-medium">{{ rupiah($cash['cash_sales']) }}</dd>
+                </div>
+                <div class="flex justify-between gap-3 py-2">
+                    <dt class="text-muted">+ Pemasukan lain</dt>
+                    <dd class="font-medium">{{ rupiah($cash['income']) }}</dd>
+                </div>
+                <div class="flex justify-between gap-3 py-2">
+                    <dt class="text-muted">− Pengeluaran kas outlet <span class="block text-sm">disetujui {{ rupiah($cash['expense_approved']) }} · menunggu {{ rupiah($cash['expense_pending']) }}</span></dt>
+                    <dd class="font-medium">{{ rupiah($cash['expense_approved'] + $cash['expense_pending']) }}</dd>
+                </div>
+                <div class="flex justify-between gap-3 py-2">
+                    <dt class="font-semibold">Kas seharusnya</dt>
+                    <dd class="text-lg font-bold">{{ rupiah($this->expectedCash) }}</dd>
                 </div>
             </dl>
+
+            @if ($cash['personal'] > 0 || $cash['expense_rejected'] > 0)
+                <dl class="flex flex-col gap-2 rounded-xl bg-canvas p-4 text-base">
+                    @if ($cash['personal'] > 0)
+                        <div class="flex justify-between gap-3">
+                            <dt class="text-muted">Talangan penjaga (uang pribadi, tidak dari laci)</dt>
+                            <dd class="font-medium">{{ rupiah($cash['personal']) }}</dd>
+                        </div>
+                    @endif
+                    @if ($cash['expense_rejected'] > 0)
+                        <div class="flex justify-between gap-3 text-danger">
+                            <dt>Pengeluaran ditolak (harus dipertanggungjawabkan)</dt>
+                            <dd class="font-semibold">{{ rupiah($cash['expense_rejected']) }}</dd>
+                        </div>
+                    @endif
+                </dl>
+            @endif
 
             <flux:field>
                 <flux:label class="text-base!">Uang tunai fisik di laci *</flux:label>

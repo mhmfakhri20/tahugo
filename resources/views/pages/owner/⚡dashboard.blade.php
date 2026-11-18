@@ -4,6 +4,7 @@ use App\Enums\RequestStatus;
 use App\Models\Location;
 use App\Models\StockRequest;
 use App\Services\AttendanceService;
+use App\Services\CashService;
 use App\Services\StockOverviewService;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
@@ -38,6 +39,15 @@ new #[Title('Dashboard')] class extends Component {
     public function attendanceToday(): \Illuminate\Support\Collection
     {
         return app(AttendanceService::class)->todaySummary($this->locations->filter->isOutlet()->values());
+    }
+
+    /**
+     * REP-1: outlet expenses waiting for verification + today's outlet expenses, per outlet.
+     */
+    #[Computed]
+    public function expensesByOutlet(): \Illuminate\Support\Collection
+    {
+        return app(CashService::class)->pendingByOutlet($this->locations->filter->isOutlet()->values());
     }
 
     #[Computed]
@@ -142,6 +152,39 @@ new #[Title('Dashboard')] class extends Component {
             @endif
         </section>
     </div>
+
+    {{-- Pengeluaran menunggu verifikasi (REP-1, CASH-3) --}}
+    @php $expenseRows = $this->expensesByOutlet; @endphp
+    <section class="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4 sm:p-6">
+        <div class="flex items-start justify-between gap-3">
+            <div>
+                <h2 class="text-lg font-semibold text-text">Pengeluaran menunggu verifikasi</h2>
+                <p class="text-sm text-muted">Pengeluaran outlet yang belum Anda periksa, dan total pengeluaran hari ini.</p>
+            </div>
+            <flux:button variant="ghost" size="sm" icon:trailing="arrow-right" :href="route('owner.verification', ['tab' => 'expenses'])" wire:navigate>Buka verifikasi</flux:button>
+        </div>
+
+        @if ($expenseRows->isEmpty())
+            <x-empty-state icon="receipt-percent" title="Belum ada outlet aktif" />
+        @else
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach ($expenseRows as $row)
+                    <div wire:key="exp-outlet-{{ $row['outlet']->id }}" class="flex flex-col gap-2 rounded-xl border border-border p-4">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="truncate font-semibold">{{ $row['outlet']->name }}</div>
+                            @if ($row['pending_count'] > 0)
+                                <x-status-badge variant="soft">{{ $row['pending_count'] }} menunggu</x-status-badge>
+                            @else
+                                <x-status-badge variant="success">Tidak ada</x-status-badge>
+                            @endif
+                        </div>
+                        <div class="text-2xl font-bold">{{ rupiah($row['pending_total']) }}</div>
+                        <div class="text-sm text-muted">Pengeluaran hari ini: {{ rupiah($row['today_total']) }}</div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </section>
 
     {{-- Absensi hari ini (REP-1, ATT-7) --}}
     <section class="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4 sm:p-6">

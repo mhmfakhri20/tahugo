@@ -1,5 +1,7 @@
 @php
-    $pendingRequests = \App\Models\StockRequest::query()->inStatus(\App\Enums\RequestStatus::Pending)->count();
+    // Badge Verifikasi = permintaan bahan + pengeluaran outlet yang menunggu (§11).
+    $pendingRequests = \App\Models\StockRequest::query()->inStatus(\App\Enums\RequestStatus::Pending)->count()
+        + \App\Models\CashEntry::query()->where('direction', 'out')->whereNotNull('shift_id')->where('status', 'pending')->count();
 @endphp
 <div class="px-2 pt-2 pb-1 text-xs font-semibold tracking-wide text-muted uppercase">Menu utama</div>
 <flux:sidebar.item icon="home" :href="route('owner.dashboard')" :current="request()->routeIs('owner.dashboard')" wire:navigate>

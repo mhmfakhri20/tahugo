@@ -24,6 +24,7 @@ class ShiftService
     public function __construct(
         private readonly AttendanceService $attendance,
         private readonly SaleService $sales,
+        private readonly CashService $cash,
     ) {}
 
     /**
@@ -149,13 +150,43 @@ class ShiftService
      */
     public function expectedCash(Shift $shift): int
     {
-        $expected = $shift->opening_cash
-            + $this->sales->cashSalesTotal($shift); // completed offline cash sales (void excluded)
+        // "Uang pribadi" expenses are paid by the staff, not from the drawer: they don't reduce it.
+        return $shift->opening_cash
+            + $this->sales->cashSalesTotal($shift)          // completed offline cash sales (void excluded)
+            + $this->cash->incomeTotal($shift)              // other cash income
+            - $this->cash->outletCashExpenseTotal($shift);  // outlet-cash expenses, pending or approved
+    }
 
-        // TODO(F5, CASH): + Σ cash_entries.amount WHERE shift_id = shift AND direction = in
-        //                 − Σ cash_entries.amount WHERE shift_id = shift AND direction = out
-        //                   AND fund_source = outlet_cash AND status <> rejected.
+    /**
+     * Full cash summary of a shift (SHF-3/4, CASH-5).
+     *
+     * `expected_at_close` / `variance_at_close` are what was stored when the shift was closed.
+     * Expenses can be verified later: `variance_after_verification` recomputes expected cash NOW,
+     * so an expense rejected afterwards increases the shortage the staff must account for.
+     *
+     * @return array<string, mixed>
+     */
+    public function cashSummary(Shift $shift): array
+    {
+        $breakdown = $this->cash->shiftBreakdown($shift);
+        $expectedNow = $this->expectedCash($shift);
+        $closed = ! $shift->isOpen();
 
-        return $expected;
+        return [
+            'sales' => $this->sales->shiftSummary($shift),
+            'opening_cash' => $shift->opening_cash,
+            'cash_sales' => $this->sales->cashSalesTotal($shift),
+            'income' => $breakdown['income'],
+            'expense_pending' => $breakdown['pending'],
+            'expense_approved' => $breakdown['approved'],
+            'expense_rejected' => $breakdown['rejected'],
+            'personal' => $breakdown['personal'],
+            'rejected_entries' => $breakdown['rejected_entries'],
+            'expected_now' => $expectedNow,
+            'expected_at_close' => $closed ? $shift->expected_cash : null,
+            'counted_cash' => $shift->counted_cash,
+            'variance_at_close' => $closed ? $shift->variance : null,
+            'variance_after_verification' => $closed && $shift->counted_cash !== null ? $shift->counted_cash - $expectedNow : null,
+        ];
     }
 }

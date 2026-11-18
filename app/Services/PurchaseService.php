@@ -20,13 +20,14 @@ class PurchaseService
 {
     public const RECEIPT_DISK = 'local';
 
-    public function __construct(private readonly StockService $stock) {}
+    public function __construct(
+        private readonly StockService $stock,
+        private readonly CashService $cash,
+    ) {}
 
     /**
-     * Record a purchase: header + lines, `purchase_in` to the warehouse, and update
-     * `items.last_purchase_price`.
-     *
-     * TODO(F5, CASH-7): also record the purchase as a business expense in `cash_entries`.
+     * Record a purchase: header + lines, `purchase_in` to the warehouse, update
+     * `items.last_purchase_price`, and record it as an approved business expense (CASH-7).
      *
      * @param  array{supplier: string, purchase_date: string}  $data
      * @param  list<array{item_id: int|string, qty: int|float|string, unit_price: int|string}>  $lines
@@ -79,6 +80,9 @@ class PurchaseService
                 $purchase->update(['total' => $total]);
 
                 $this->stock->moveMany($movements, MovementType::PurchaseIn, $user, $purchase);
+
+                // CASH-7: the purchase is a business expense, in the same transaction.
+                $this->cash->recordPurchase($purchase);
 
                 return $purchase->load('items.item');
             });

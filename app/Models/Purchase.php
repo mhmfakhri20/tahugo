@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -66,5 +67,15 @@ class Purchase extends Model
     public function number(): string
     {
         return 'PB-'.str_pad((string) $this->id, 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * The business expense created automatically for this purchase (CASH-7).
+     *
+     * @return MorphOne<CashEntry, $this>
+     */
+    public function cashEntry(): MorphOne
+    {
+        return $this->morphOne(CashEntry::class, 'source');
     }
 }

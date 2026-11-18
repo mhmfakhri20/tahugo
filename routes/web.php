@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AttendancePhotoController;
+use App\Http\Controllers\CashReceiptController;
 use App\Http\Controllers\PurchaseReceiptController;
 use App\Http\Controllers\ShiftPhotoController;
 use Illuminate\Http\Request;
@@ -18,6 +19,8 @@ Route::middleware(['auth'])->group(function () {
     // Foto absen & foto tutup shift: hanya pemilik atau pemilik foto (ATT-4, NFR-5).
     Route::get('attendances/{attendance}/photo', AttendancePhotoController::class)->name('attendances.photo');
     Route::get('shifts/{shift}/photo', ShiftPhotoController::class)->name('shifts.photo');
+    // Foto nota pengeluaran: pemilik & pencatatnya (CASH-1, CASH-4).
+    Route::get('cash-entries/{cashEntry}/receipt', CashReceiptController::class)->name('cash-entries.receipt');
 
     // Each role area ends with a catch-all so that unknown URLs in another role's area
     // also return 403 (the gate runs before the 404), and existing URLs can't be probed.
@@ -26,6 +29,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('can:access-owner')->prefix('owner')->name('owner.')->group(function () {
         Route::livewire('/', 'pages::owner.dashboard')->name('dashboard');
         Route::livewire('verification', 'pages::owner.verification')->name('verification');
+        Route::livewire('business-expenses', 'pages::business-expenses')->name('business-expenses');
         // Persediaan (F2)
         Route::livewire('stock', 'pages::owner.stock')->name('stock');
         Route::livewire('stock/{location}/{item}', 'pages::stock.card')->name('stock.card');
@@ -54,11 +58,14 @@ Route::middleware(['auth'])->group(function () {
         Route::livewire('attendance', 'pages::outlet.attendance')->name('attendance');
         Route::livewire('shift/open', 'pages::outlet.shift-open')->name('shift.open');
         Route::livewire('shift/close', 'pages::outlet.shift-close')->name('shift.close');
-        // Kasir & Pengeluaran hanya saat shift terbuka (BR-4). Pengeluaran dibuat di F5.
+        // Daftar pengeluaran tetap bisa dibuka tanpa shift (melihat penolakan pemilik, CASH-5).
+        Route::livewire('expenses', 'pages::outlet.expenses')->name('expenses');
+        // Kasir & input kas hanya saat shift terbuka (BR-4).
         Route::middleware('open-shift')->group(function () {
             Route::livewire('cashier', 'pages::outlet.cashier')->name('cashier');
             Route::livewire('sales', 'pages::outlet.sales')->name('sales');
-            Route::view('expenses', 'pages.coming-soon', ['title' => 'Pengeluaran'])->name('expenses');
+            Route::livewire('expenses/create', 'pages::outlet.expense-form')->name('expenses.create');
+            Route::livewire('expenses/{cashEntry}/edit', 'pages::outlet.expense-form')->name('expenses.edit');
         });
         Route::livewire('stock', 'pages::outlet.stock')->name('stock');
         Route::livewire('stock/{item}', 'pages::stock.card')->name('stock.card');
@@ -76,6 +83,7 @@ Route::middleware(['auth'])->group(function () {
         Route::livewire('purchases/create', 'pages::warehouse.purchase-create')->name('purchases.create');
         Route::livewire('purchases/{purchase}', 'pages::warehouse.purchase-show')->name('purchases.show');
         Route::livewire('shipments', 'pages::warehouse.shipments')->name('shipments');
+        Route::livewire('business-expenses', 'pages::business-expenses')->name('business-expenses');
         Route::livewire('requests/{stockRequest}', 'pages::stock-requests.show')->name('requests.show');
         Route::view('reports', 'pages.coming-soon', ['title' => 'Laporan Persediaan'])->name('reports');
         Route::get('{path}', fn () => abort(404))->where('path', '.*')->name('fallback');

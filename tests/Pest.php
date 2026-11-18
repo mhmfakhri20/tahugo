@@ -5,6 +5,8 @@ use App\Enums\PaymentMethod;
 use App\Enums\ProductType;
 use App\Enums\SalesChannel;
 use App\Models\Attendance;
+use App\Models\CashEntry;
+use App\Models\ExpenseCategory;
 use App\Models\Item;
 use App\Models\Location;
 use App\Models\Product;
@@ -12,11 +14,13 @@ use App\Models\Sale;
 use App\Models\Shift;
 use App\Models\User;
 use App\Services\AttendanceService;
+use App\Services\CashService;
 use App\Services\SaleService;
 use App\Services\StockService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /*
@@ -184,6 +188,34 @@ function posWorld(): object
         'paket' => $paket,
         'satuan' => $satuan,
     ];
+}
+
+/**
+ * Cash test fixture (F5): posWorld() + an expense category, a warehouse admin and fake storage.
+ */
+function cashWorld(): object
+{
+    Storage::fake('local');
+
+    $w = posWorld();
+    $w->category = ExpenseCategory::factory()->create(['name' => 'Bahan dadakan']);
+    $w->admin = User::factory()->warehouseAdmin()->create();
+    $w->warehouse = Location::factory()->warehouse()->create(['code' => 'GDG']);
+
+    return $w;
+}
+
+/**
+ * Record an outlet expense through the service.
+ */
+function spend(User $user, int $amount, string $fund = 'outlet_cash', ?ExpenseCategory $category = null): CashEntry
+{
+    return app(CashService::class)->recordExpense($user, [
+        'category_id' => ($category ?? ExpenseCategory::query()->firstOrFail())->id,
+        'amount' => $amount,
+        'description' => 'Beli cabai di pasar',
+        'fund_source' => $fund,
+    ], selfie());
 }
 
 /**

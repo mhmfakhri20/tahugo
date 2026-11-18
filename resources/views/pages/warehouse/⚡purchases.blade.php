@@ -49,6 +49,7 @@ new #[Title('Pembelian')] class extends Component {
 
 <div class="flex flex-col gap-6">
     <x-page-header title="Pembelian" description="Catat bahan yang dibeli. Stok gudang bertambah otomatis.">
+        <flux:button icon="building-office" :href="route('warehouse.business-expenses')" wire:navigate>Pengeluaran usaha</flux:button>
         @can('create', Purchase::class)
             <flux:button variant="primary" icon="plus" :href="route('warehouse.purchases.create')" wire:navigate>Catat pembelian</flux:button>
         @endcan
