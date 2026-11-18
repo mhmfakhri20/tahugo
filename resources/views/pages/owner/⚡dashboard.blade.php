@@ -3,6 +3,7 @@
 use App\Enums\RequestStatus;
 use App\Models\Location;
 use App\Models\StockRequest;
+use App\Services\AttendanceService;
 use App\Services\StockOverviewService;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
@@ -28,6 +29,15 @@ new #[Title('Dashboard')] class extends Component {
     public function lowStock(): \Illuminate\Support\Collection
     {
         return app(StockOverviewService::class)->attention($this->locations);
+    }
+
+    /**
+     * REP-1: who has clocked in / is late today, per active outlet.
+     */
+    #[Computed]
+    public function attendanceToday(): \Illuminate\Support\Collection
+    {
+        return app(AttendanceService::class)->todaySummary($this->locations->filter->isOutlet()->values());
     }
 
     #[Computed]
@@ -133,6 +143,62 @@ new #[Title('Dashboard')] class extends Component {
         </section>
     </div>
 
+    {{-- Absensi hari ini (REP-1, ATT-7) --}}
+    <section class="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4 sm:p-6">
+        <div class="flex items-start justify-between gap-3">
+            <div>
+                <h2 class="text-lg font-semibold text-text">Absensi hari ini</h2>
+                <p class="text-sm text-muted">Siapa yang sudah absen dan status shift tiap outlet.</p>
+            </div>
+            <flux:button variant="ghost" size="sm" icon:trailing="arrow-right" :href="route('owner.attendance')" wire:navigate>Rekap absensi</flux:button>
+        </div>
+
+        @if ($this->attendanceToday->isEmpty())
+            <x-empty-state icon="finger-print" title="Belum ada outlet aktif" description="Tambahkan outlet di Pengaturan untuk memantau absensi." />
+        @else
+            <div class="grid gap-4 md:grid-cols-2">
+                @foreach ($this->attendanceToday as $row)
+                    <div wire:key="att-today-{{ $row['outlet']->id }}" class="flex flex-col gap-3 rounded-xl border border-border p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="truncate font-semibold">{{ $row['outlet']->name }}</div>
+                                <div class="text-sm text-muted">
+                                    Jam standar {{ $row['outlet']->open_time ? substr($row['outlet']->open_time, 0, 5) : '—' }}–{{ $row['outlet']->close_time ? substr($row['outlet']->close_time, 0, 5) : '—' }}
+                                </div>
+                            </div>
+                            @if ($row['openShift'])
+                                <x-status-badge variant="success">Buka sejak {{ $row['openShift']->opened_at->format('H.i') }}</x-status-badge>
+                            @elseif ($row['closedShift'])
+                                <x-status-badge variant="muted">Tutup {{ $row['closedShift']->closed_at->format('H.i') }}</x-status-badge>
+                            @else
+                                <x-status-badge variant="warning">Belum buka</x-status-badge>
+                            @endif
+                        </div>
+
+                        <ul class="flex flex-col divide-y divide-border">
+                            @foreach ($row['present'] as $person)
+                                <li class="flex items-center justify-between gap-3 py-2 text-sm">
+                                    <span class="truncate font-medium">{{ $person['user']->name }}</span>
+                                    <span class="flex shrink-0 items-center gap-2">
+                                        <span class="text-muted">{{ $person['in']->server_time->format('H.i') }}{{ $person['out'] ? '–'.$person['out']->server_time->format('H.i') : '' }}</span>
+                                        @php $badge = $person['in']->statusBadge(); @endphp
+                                        <x-status-badge :variant="$badge['variant']">{{ $badge['label'] }}</x-status-badge>
+                                    </span>
+                                </li>
+                            @endforeach
+                            @foreach ($row['absent'] as $person)
+                                <li class="flex items-center justify-between gap-3 py-2 text-sm">
+                                    <span class="truncate font-medium">{{ $person->name }}</span>
+                                    <x-status-badge variant="danger">Belum absen</x-status-badge>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </section>
+
     <section class="flex flex-col gap-3">
         <h2 class="text-lg font-semibold text-text">Cabang & gudang aktif</h2>
 
@@ -156,7 +222,7 @@ new #[Title('Dashboard')] class extends Component {
         <x-empty-state
             icon="chart-bar"
             title="Ringkasan penjualan segera hadir"
-            description="Total penjualan, pengeluaran, dan absensi tiap cabang akan tampil di sini."
+            description="Total penjualan dan pengeluaran tiap cabang akan tampil di sini."
         />
     </div>
 </div>

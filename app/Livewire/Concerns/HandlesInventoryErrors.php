@@ -2,11 +2,11 @@
 
 namespace App\Livewire\Concerns;
 
-use App\Exceptions\InventoryException;
+use App\Exceptions\BusinessRuleException;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Turns inventory business-rule errors (Bahasa Indonesia) into a validation error on a field,
+ * Turns business-rule errors (inventory, shift, attendance; Bahasa Indonesia) into a validation error on a field,
  * so the message appears right under the related input (NFR-1).
  */
 trait HandlesInventoryErrors
@@ -23,7 +23,7 @@ trait HandlesInventoryErrors
     {
         try {
             return $callback();
-        } catch (InventoryException $e) {
+        } catch (BusinessRuleException $e) {
             throw ValidationException::withMessages([$errorKey => $e->getMessage()]);
         }
     }

@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\AttendancePhotoController;
 use App\Http\Controllers\PurchaseReceiptController;
+use App\Http\Controllers\ShiftPhotoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -13,6 +15,9 @@ Route::middleware(['auth'])->group(function () {
 
     // Foto nota pembelian: disk privat, hanya lewat route terotorisasi (NFR-4).
     Route::get('purchases/{purchase}/receipt', PurchaseReceiptController::class)->name('purchases.receipt');
+    // Foto absen & foto tutup shift: hanya pemilik atau pemilik foto (ATT-4, NFR-5).
+    Route::get('attendances/{attendance}/photo', AttendancePhotoController::class)->name('attendances.photo');
+    Route::get('shifts/{shift}/photo', ShiftPhotoController::class)->name('shifts.photo');
 
     // Each role area ends with a catch-all so that unknown URLs in another role's area
     // also return 403 (the gate runs before the 404), and existing URLs can't be probed.
@@ -27,7 +32,7 @@ Route::middleware(['auth'])->group(function () {
         Route::livewire('requests/create', 'pages::stock-requests.create')->name('requests.create');
         Route::livewire('requests/{stockRequest}', 'pages::stock-requests.show')->name('requests.show');
         Route::view('reports', 'pages.coming-soon', ['title' => 'Laporan'])->name('reports');
-        Route::view('attendance', 'pages.coming-soon', ['title' => 'Absensi'])->name('attendance');
+        Route::livewire('attendance', 'pages::owner.attendance')->name('attendance');
         // Pengaturan: master data & user management (F1).
         Route::get('settings', fn () => redirect()->route('owner.settings.users'))->name('settings');
         Route::prefix('settings')->name('settings.')->group(function () {
@@ -45,8 +50,15 @@ Route::middleware(['auth'])->group(function () {
     // Penjaga Outlet
     Route::middleware('can:access-outlet')->prefix('outlet')->name('outlet.')->group(function () {
         Route::livewire('/', 'pages::outlet.home')->name('home');
-        Route::view('cashier', 'pages.coming-soon', ['title' => 'Kasir'])->name('cashier');
-        Route::view('expenses', 'pages.coming-soon', ['title' => 'Pengeluaran'])->name('expenses');
+        // Absen & shift (F3)
+        Route::livewire('attendance', 'pages::outlet.attendance')->name('attendance');
+        Route::livewire('shift/open', 'pages::outlet.shift-open')->name('shift.open');
+        Route::livewire('shift/close', 'pages::outlet.shift-close')->name('shift.close');
+        // Kasir & Pengeluaran hanya saat shift terbuka (BR-4). Halamannya dibuat di F4/F5.
+        Route::middleware('open-shift')->group(function () {
+            Route::view('cashier', 'pages.coming-soon', ['title' => 'Kasir'])->name('cashier');
+            Route::view('expenses', 'pages.coming-soon', ['title' => 'Pengeluaran'])->name('expenses');
+        });
         Route::livewire('stock', 'pages::outlet.stock')->name('stock');
         Route::livewire('stock/{item}', 'pages::stock.card')->name('stock.card');
         Route::livewire('requests/create', 'pages::stock-requests.create')->name('requests.create');

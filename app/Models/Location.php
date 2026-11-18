@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\LocationType;
+use App\Enums\ShiftStatus;
 use Database\Factories\LocationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -72,6 +74,29 @@ class Location extends Model
     public function minStocks(): HasMany
     {
         return $this->hasMany(ItemMinStock::class);
+    }
+
+    /**
+     * @return HasMany<Shift, $this>
+     */
+    public function shifts(): HasMany
+    {
+        return $this->hasMany(Shift::class);
+    }
+
+    /**
+     * The currently open shift (at most one per outlet, SHF-1).
+     *
+     * @return HasOne<Shift, $this>
+     */
+    public function openShift(): HasOne
+    {
+        return $this->hasOne(Shift::class)->where('status', ShiftStatus::Open)->latest('opened_at');
+    }
+
+    public function hasCoordinates(): bool
+    {
+        return $this->latitude !== null && $this->longitude !== null;
     }
 
     public function isOutlet(): bool

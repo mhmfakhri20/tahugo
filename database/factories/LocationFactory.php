@@ -47,6 +47,22 @@ class LocationFactory extends Factory
         ]);
     }
 
+    /**
+     * Fixed coordinates & attendance radius (ATT-2).
+     */
+    public function withCoordinates(?float $lat, ?float $lng, int $radius = 100): static
+    {
+        return $this->state(fn () => ['latitude' => $lat, 'longitude' => $lng, 'attendance_radius_m' => $radius]);
+    }
+
+    /**
+     * Standard opening/closing time "HH:MM" (null = no rule) (ATT-5).
+     */
+    public function withHours(?string $open, ?string $close): static
+    {
+        return $this->state(fn () => ['open_time' => $open, 'close_time' => $close]);
+    }
+
     public function inactive(): static
     {
         return $this->state(fn () => ['is_active' => false]);

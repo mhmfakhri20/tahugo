@@ -8,6 +8,7 @@ use App\Enums\PaymentMethod;
 use App\Enums\RequestStatus;
 use App\Enums\Role;
 use App\Enums\SalesChannel;
+use App\Enums\ShiftStatus;
 
 test('every enum case has a label and values() matches the cases', function (string $enum) {
     expect($enum::values())->toBe(array_column($enum::cases(), 'value'));
@@ -26,6 +27,7 @@ test('every enum case has a label and values() matches the cases', function (str
     RequestStatus::class,
     ExpenseStatus::class,
     AttendanceType::class,
+    ShiftStatus::class,
 ]);
 
 test('enum values follow the PRD', function () {

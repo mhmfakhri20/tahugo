@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Shift;
 use App\Models\User;
 
 $areas = [
@@ -7,7 +8,7 @@ $areas = [
         'owner.settings.users', 'owner.settings.locations', 'owner.settings.items', 'owner.settings.products',
         'owner.settings.products.create', 'owner.settings.expense-categories', 'owner.stock', 'owner.requests.create',
     ],
-    'outlet' => ['outlet.home', 'outlet.cashier', 'outlet.expenses', 'outlet.stock', 'outlet.requests.create'],
+    'outlet' => ['outlet.home', 'outlet.attendance', 'outlet.cashier', 'outlet.expenses', 'outlet.stock', 'outlet.requests.create'],
     'warehouse' => ['warehouse.home', 'warehouse.stock', 'warehouse.purchases', 'warehouse.shipments', 'warehouse.reports', 'warehouse.purchases.create'],
 ];
 
@@ -23,7 +24,12 @@ test('guests are redirected to the login page', function (string $route) {
 
 foreach ($users as $role => $makeUser) {
     test("{$role} can open every page of its own area", function () use ($makeUser, $areas, $role) {
-        $this->actingAs($makeUser());
+        $this->actingAs($user = $makeUser());
+
+        // Kasir & Pengeluaran need an open shift at the outlet (BR-4).
+        if ($role === 'outlet') {
+            Shift::factory()->atOutlet($user->location, $user)->create();
+        }
 
         foreach ($areas[$role] as $route) {
             $this->get(route($route))->assertOk();

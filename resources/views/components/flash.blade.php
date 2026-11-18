@@ -11,10 +11,15 @@
 
 @php
     $message = session('success');
+    $error = session('error');
 @endphp
 
 @if (filled($message))
     <x-toast title="Berhasil" :size="$size" :class="$attributes->get('class')">{{ $message }}</x-toast>
+@endif
+
+@if (filled($error))
+    <x-toast title="Belum bisa" variant="danger" :size="$size" :class="$attributes->get('class')">{{ $error }}</x-toast>
 @endif
 
 <div
