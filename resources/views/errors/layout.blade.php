@@ -5,7 +5,7 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>@yield('title') - {{ config('app.name', 'Tahu Go') }}</title>
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+        <link rel="icon" href="/favicon.png" type="image/png" sizes="64x64">
         @vite(['resources/css/app.css'])
     </head>
     <body class="flex min-h-screen items-center justify-center bg-canvas p-4 text-base text-text">
